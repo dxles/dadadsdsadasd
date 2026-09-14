@@ -5,6 +5,8 @@ function initPlayerPage() {
   const channel = params.get("c") || "";
 
   const NOWPLAYING_KEY = "cinla_now_playing";
+  
+  // Kapak görseli öncelikli olarak YouTube High Quality üzerinden çekiliyor
   const coverUrl = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "";
 
   // HTML Elementleri Bağlantıları
@@ -34,10 +36,14 @@ function initPlayerPage() {
   const muteBtn = document.getElementById("muteBtn");
   const volumeSlider = document.getElementById("volumeSlider");
 
+  // Bilgileri ve arkaplanı anında set et (Simsiyah kalma sorunu kökten çözüldü)
   if (trackTitleEl) trackTitleEl.textContent = rawTitle;
   if (trackChannelEl) trackChannelEl.textContent = channel;
   if (coverImgEl) coverImgEl.src = coverUrl;
-  if (bgBlurEl) bgBlurEl.style.backgroundImage = coverUrl ? `url(${coverUrl})` : "none";
+  
+  if (bgBlurEl && coverUrl) {
+    bgBlurEl.style.backgroundImage = `url(${coverUrl})`;
+  }
 
   let ytPlayer = null;
   let isPlaying = false;
@@ -59,7 +65,7 @@ function initPlayerPage() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
-  // ---- LocalStorage Yönetimi (Şimdi Çalıyor Devamlılığı) ----
+  // ---- LocalStorage Yönetimi ----
   function readNowPlaying() {
     try {
       return JSON.parse(localStorage.getItem(NOWPLAYING_KEY) || "null");
@@ -168,6 +174,7 @@ function initPlayerPage() {
         if (startAt > 0) {
           e.target.seekTo(startAt, true);
         }
+        e.target.playVideo(); // Otomatik oynatma tetikleyicisi
         startProgressLoop();
       },
       onStateChange: (e) => {
@@ -245,7 +252,7 @@ function initPlayerPage() {
     }, 1000);
   }
 
-  // ---- Kontrol Butonları & Dinleyiciler ----
+  // ---- Kontrol Butonları ----
   function togglePlay() {
     if (!ytPlayer) return;
     if (isPlaying) {
@@ -315,12 +322,23 @@ function initPlayerPage() {
     });
   }
 
-  // ---- Ses Kontrolleri ----
+  // ---- Ses ve Mute Kontrolleri (Emoji kalktı, SVG ikon yönetiliyor) ----
+  function updateVolumeIcon(vol) {
+    if (!muteBtn) return;
+    if (vol === 0) {
+      // Sessiz İkonu
+      muteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C22.63 14.85 23 13.48 23 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
+    } else {
+      // Normal Ses İkonu
+      muteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
+    }
+  }
+
   function applyVolume(vol) {
     if (!ytPlayer || !ytPlayer.setVolume) return;
     ytPlayer.setVolume(vol);
     if (volumeSlider) volumeSlider.style.setProperty("--vol-fill", vol + "%");
-    if (muteBtn) muteBtn.textContent = vol === 0 ? "🔇" : vol < 50 ? "🔉" : "🔊";
+    updateVolumeIcon(vol);
   }
 
   if (volumeSlider) {
@@ -349,7 +367,7 @@ function initPlayerPage() {
     });
   }
 
-  // ---- Video Modu Yönetimi ----
+  // ---- Video Modu ----
   function enterVideoMode() {
     videoModeOn = true;
     if (videoFrame && ytPlayerHost) {
@@ -371,7 +389,7 @@ function initPlayerPage() {
   if (videoToggleBtn) videoToggleBtn.addEventListener("click", enterVideoMode);
   if (videoHideBtn) videoHideBtn.addEventListener("click", exitVideoMode);
 
-  // ---- Sayfadan Ayrılma (Listeye Dön) ----
+  // ---- Listeye Dön / Sayfa Kapatma ----
   if (backLink) {
     backLink.addEventListener("click", (e) => {
       e.preventDefault();
