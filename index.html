@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Çınla — Türkçe Müzik</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">Çınla</div>
+
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Şarkı, sanatçı ara...">
+      <button id="searchBtn">Ara</button>
+    </div>
+
+    <nav class="genre-nav">
+      <button class="genre-btn active" data-genre="hepsi">Hepsi</button>
+      <button class="genre-btn" data-genre="rap">Rap</button>
+      <button class="genre-btn" data-genre="arabesk">Arabesk</button>
+      <button class="genre-btn" data-genre="pop">Pop</button>
+      <button class="genre-btn" data-genre="benim">Eklediklerim</button>
+    </nav>
+
+    <button class="add-song-btn" id="addSongBtn">+ Şarkı Ekle</button>
+
+    <div class="api-key-box">
+      <label for="apiKeyInput">YouTube API Anahtarın</label>
+      <input type="password" id="apiKeyInput" placeholder="AIza...">
+      <button id="saveKeyBtn">Kaydet</button>
+      <p class="api-hint">Anahtarın sadece tarayıcında, yerel olarak saklanır.</p>
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="content-header">
+      <h1 id="sectionTitle">Hepsi</h1>
+      <button id="refreshBtn" class="refresh-btn" title="Listeyi yenile">Yenile</button>
+    </header>
+
+    <div id="statusBar" class="status-bar"></div>
+
+    <div id="songGrid" class="song-grid"></div>
+  </main>
+
+</div>
+
+<!-- Şarkı Ekleme Modalı -->
+<div id="addModal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Şarkı Ekle</h2>
+    <input type="text" id="addSearchInput" placeholder="YouTube'da ara...">
+    <button id="addSearchBtn">Ara</button>
+    <div id="addResults" class="add-results"></div>
+    <button id="closeModalBtn" class="close-modal-btn">Kapat</button>
+  </div>
+</div>
+
+<script src="seed-songs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Şimdi Çalıyor — Çınla</title>
+<link rel="stylesheet" href="player.css">
+</head>
+<body>
+
+<a href="index.html" class="back-link">← Listeye dön</a>
+
+<div class="player-page">
+
+  <div class="cover-wrap">
+    <img id="coverImg" class="cover" alt="">
+  </div>
+
+  <div class="track-info">
+    <h1 id="trackTitle">—</h1>
+    <p id="trackChannel">—</p>
+  </div>
+
+  <div class="progress-area">
+    <span id="curTime" class="time">0:00</span>
+    <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
+    <span id="durTime" class="time">0:00</span>
+  </div>
+
+  <div class="controls">
+    <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲ 10</button>
+    <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
+    <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">10 ⟳</button>
+  </div>
+
+  <div class="lyrics-box">
+    <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
+    <div id="lyricsContent" class="lyrics-content"></div>
+  </div>
+
+</div>
+
+<div id="ytPlayerHost" style="position:absolute; width:1px; height:1px; overflow:hidden; opacity:0;"></div>
+
+<script src="youtube-player.js"></script>
+<script src="player.js"></script>
+</body>
+</html>
