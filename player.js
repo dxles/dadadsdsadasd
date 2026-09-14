@@ -1,3 +1,5 @@
+function initPlayerPage() {
+
 const params = new URLSearchParams(window.location.search);
 const videoId = params.get("v");
 const rawTitle = params.get("t") || "Bilinmeyen Şarkı";
@@ -536,3 +538,11 @@ async function fetchLyrics() {
 }
 
 fetchLyrics();
+
+} // initPlayerPage sonu
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPlayerPage);
+} else {
+  initPlayerPage();
+}
