@@ -159,32 +159,82 @@ html, body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
-  max-height: 340px;
-  overflow-y: auto;
+  padding: 4px 0;
+  height: 380px;
+  display: flex;
+  flex-direction: column;
 }
 
 .lyrics-status {
   color: var(--text-dim);
   font-size: 13px;
+  padding: 16px 20px 0;
+}
+
+.lyrics-viewport {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 60px,
+    black calc(100% - 60px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 60px,
+    black calc(100% - 60px),
+    transparent 100%
+  );
+}
+
+.lyrics-viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .lyrics-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
+  padding: 0 26px;
+}
+
+.lyric-pad {
+  height: 150px;
+  flex-shrink: 0;
 }
 
 .lyric-line {
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.4;
   color: var(--text-faint);
-  transition: color 0.2s ease;
+  opacity: 0.45;
+  filter: blur(0.2px);
+  transform-origin: left center;
+  transform: scale(0.96);
+  transition: color 0.35s ease, opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+  cursor: pointer;
+}
+
+.lyric-line:hover {
+  opacity: 0.75;
+}
+
+.lyric-line.near {
+  color: var(--text-dim);
+  opacity: 0.65;
+  transform: scale(0.98);
 }
 
 .lyric-line.active {
   color: var(--text);
-  font-weight: 600;
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1.04);
 }
 
 .lyric-plain {
@@ -192,4 +242,5 @@ html, body {
   line-height: 1.7;
   color: var(--text-dim);
   white-space: pre-line;
+  padding: 20px 26px;
 }
