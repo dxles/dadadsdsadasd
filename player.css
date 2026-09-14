@@ -28,6 +28,7 @@ html, body {
   background-size: cover;
   background-position: center;
   filter: blur(30px) brightness(0.4);
+  transform: scale(1.1); /* Kenarlardaki boşlukları kapatır */
   z-index: -2;
   transition: all 0.5s ease;
 }
@@ -35,7 +36,7 @@ html, body {
 .bg-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.25);
   z-index: -1;
 }
 
@@ -383,7 +384,35 @@ html, body {
 
 #videoToggleBtn:hover { background: rgba(255, 255, 255, 0.3); }
 
-/* ---- Video modu: gerçek YouTube videosu tam ortada (Nowtify) ---- */
+/* ---- YouTube Player Host ve Video Modu (DÜZELTİLEN KISIM) ---- */
+#ytPlayerHost {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Video moduna geçince ekranda ortalanıp devleşecek yapı */
+body.video-active #ytPlayerHost,
+#ytPlayerHost.video-mode {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 90vw !important;
+  max-width: 900px !important;
+  aspect-ratio: 16 / 9 !important;
+  height: auto !important;
+  z-index: 9999 !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+}
+
+/* Sizin orijinal video sarmalayıcınız */
 .video-frame-wrap {
   position: fixed;
   top: 50%;
