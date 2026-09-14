@@ -29,7 +29,6 @@ function initPlayerPage() {
   const videoHideBtn = document.getElementById("videoHideBtn");
   const videoFrame = document.getElementById("videoFrame");
   const ytPlayerHost = document.getElementById("ytPlayerHost");
-  const stage = document.getElementById("stage");
   const backLink = document.getElementById("backLink");
   const muteBtn = document.getElementById("muteBtn");
   const volumeSlider = document.getElementById("volumeSlider");
@@ -159,7 +158,7 @@ function initPlayerPage() {
     }
   }
 
-  // ---- YouTube Player Kurulumu ----
+  // ---- YouTube Player Kurulumu (youtube-player.js ile gelen createYtPlayer fonksiyonu kullanılıyor) ----
   if (videoId && typeof createYtPlayer === "function") {
     createYtPlayer("ytPlayerHost", videoId, {
       onReady: (e) => {
