@@ -13,52 +13,53 @@
 
 <a href="index.html" class="back-link" id="backLink">← Listeye dön</a>
 
-<div class="player-shell" id="playerShell">
+<div class="stage" id="stage">
 
-  <div class="now-row">
-    <div class="cover-wrap">
+  <div class="cover-col">
+    <div class="cover-wrap" id="coverWrap">
       <img id="coverImg" class="cover" alt="">
     </div>
+    <div class="equalizer" id="equalizer" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
 
+  <div class="info-col">
     <div class="track-meta">
-      <h1 id="trackTitle">—</h1>
-      <p id="trackChannel">—</p>
+      <p id="trackChannel" class="track-channel">—</p>
+      <h1 id="trackTitle" class="track-title">—</h1>
+    </div>
 
-      <div class="progress-area">
-        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
+    <div class="lyrics-box">
+      <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
+      <div id="lyricsViewport" class="lyrics-viewport">
+        <div id="lyricsContent" class="lyrics-content"></div>
       </div>
+    </div>
+
+    <div class="progress-area">
+      <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
       <div class="time-row">
         <span id="curTime" class="time">0:00</span>
         <span id="durTime" class="time">0:00</span>
       </div>
     </div>
-  </div>
 
-  <div class="status-row">
-    <div class="equalizer" id="equalizer" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span>
-    </div>
+    <div class="controls">
+      <button id="shuffleBtn" class="ctrl-btn toggle-btn" title="Karıştır">⤨</button>
+      <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲</button>
+      <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
+      <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">⟳</button>
+      <button id="repeatBtn" class="ctrl-btn toggle-btn" title="Tekrarla">↻</button>
 
-    <div class="volume-box">
-      <button id="muteBtn" class="pill-btn icon-btn" title="Sesi kapat/aç">🔊</button>
+      <span class="ctrl-sep"></span>
+
+      <button id="muteBtn" class="ctrl-btn icon-btn" title="Sesi kapat/aç">🔊</button>
       <input type="range" id="volumeSlider" min="0" max="100" value="100" step="1" title="Ses seviyesi">
-    </div>
 
-    <button id="videoToggleBtn" class="pill-btn">Videoyu Göster</button>
-  </div>
+      <span class="ctrl-sep"></span>
 
-  <div class="controls">
-    <button id="shuffleBtn" class="ctrl-btn toggle-btn" title="Karıştır">⤨</button>
-    <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲ 10</button>
-    <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
-    <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">10 ⟳</button>
-    <button id="repeatBtn" class="ctrl-btn toggle-btn" title="Tekrarla">⟳</button>
-  </div>
-
-  <div class="lyrics-box">
-    <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
-    <div id="lyricsViewport" class="lyrics-viewport">
-      <div id="lyricsContent" class="lyrics-content"></div>
+      <button id="videoToggleBtn" class="pill-btn">Videoyu Göster</button>
     </div>
   </div>
 
@@ -67,21 +68,6 @@
 <div class="video-stage hidden" id="videoStage">
   <div class="video-frame" id="videoFrame"></div>
   <button id="videoHideBtn" class="pill-btn">Videoyu Gizle</button>
-</div>
-
-<!-- Sağ alt köşe mini oynatıcı: "Listeye dön"e basınca sayfa değişmeden önce belirir,
-     müzik kesilmeden devam eder; buradan durdurabilir/kapatabilirsin. -->
-<div class="mini-player hidden" id="miniPlayer">
-  <img id="miniCover" class="mini-cover" alt="">
-  <div class="mini-info">
-    <p id="miniTitle" class="mini-title">—</p>
-    <p id="miniChannel" class="mini-channel">—</p>
-  </div>
-  <div class="mini-eq" id="miniEq" aria-hidden="true">
-    <span></span><span></span><span></span>
-  </div>
-  <button id="miniPlayBtn" class="mini-btn" title="Oynat / Duraklat">❚❚</button>
-  <button id="miniCloseBtn" class="mini-btn mini-close" title="Kapat">✕</button>
 </div>
 
 <div id="ytPlayerHost"></div>

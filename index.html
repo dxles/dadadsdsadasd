@@ -103,9 +103,29 @@
   </div>
 </div>
 
+<!-- Sağ alt mini oynatıcı: player.html'den "Listeye dön" ile gelindiğinde
+     müzik kesilmeden burada devam eder. -->
+<div id="miniPlayer" class="mini-player hidden">
+  <a href="#" id="miniInfoLink" class="mini-info-link">
+    <img id="miniCover" class="mini-cover" alt="">
+    <div class="mini-info">
+      <p id="miniTitle" class="mini-title">—</p>
+      <p id="miniChannel" class="mini-channel">—</p>
+    </div>
+  </a>
+  <div class="mini-eq" id="miniEq" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+  <button id="miniPlayBtn" class="mini-btn" title="Oynat / Duraklat">❚❚</button>
+  <button id="miniCloseBtn" class="mini-btn mini-close" title="Kapat">✕</button>
+</div>
+
+<div id="ytMiniHost" style="position:fixed; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Flip.min.js"></script>
 <script src="seed-songs.js"></script>
+<script src="youtube-player.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

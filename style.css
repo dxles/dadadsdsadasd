@@ -530,3 +530,122 @@ a:hover {
     }
     .content { padding: 20px; }
 }
+
+/* ---- Sağ alt mini oynatıcı ---- */
+.mini-player {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 300px;
+    max-width: calc(100vw - 36px);
+    padding: 10px 12px;
+    background: rgba(24, 24, 24, 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    transform: translateY(24px) scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.mini-player.visible {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mini-player.hidden {
+    display: none;
+}
+
+.mini-player a.mini-info-link {
+    text-decoration: none;
+    color: inherit;
+    display: contents;
+}
+
+.mini-cover {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #000;
+}
+
+.mini-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.mini-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mini-channel {
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mini-eq {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.mini-eq span {
+    display: block;
+    width: 2.5px;
+    height: 3px;
+    background: var(--spotify-green);
+    border-radius: 1px;
+    transform-origin: bottom center;
+}
+
+.mini-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.mini-btn:hover {
+    background: var(--dark-hover);
+    color: var(--spotify-green);
+}
+
+.mini-close:hover {
+    color: var(--danger);
+}
+
+@media (max-width: 560px) {
+    .mini-player {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        bottom: 12px;
+    }
+}

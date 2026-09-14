@@ -39,6 +39,146 @@ function setCachedSongs(songs) {
 let currentGenre = "hepsi";
 let allSongs = [];
 
+// ---- Mini oynatıcı: player.html'den "Listeye dön" ile ayrılınca müzik
+// burada, sağ altta gizli bir YouTube player ile devam eder. ----
+const NOWPLAYING_KEY = "cinla_now_playing";
+let miniYtPlayer = null;
+let miniIsPlaying = false;
+let miniEqTweens = [];
+let miniSaveInterval = null;
+
+function readNowPlaying() {
+  try {
+    return JSON.parse(localStorage.getItem(NOWPLAYING_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function writeNowPlayingProgress() {
+  const np = readNowPlaying();
+  if (!np || !miniYtPlayer || !miniYtPlayer.getCurrentTime) return;
+  np.progress = miniYtPlayer.getCurrentTime();
+  np.isPlaying = miniIsPlaying;
+  np.updatedAt = Date.now();
+  try {
+    localStorage.setItem(NOWPLAYING_KEY, JSON.stringify(np));
+  } catch {
+    /* sessiz geç */
+  }
+}
+
+function clearNowPlaying() {
+  try {
+    localStorage.removeItem(NOWPLAYING_KEY);
+  } catch {
+    /* sessiz geç */
+  }
+}
+
+function startMiniEqualizer() {
+  const miniEq = document.getElementById("miniEq");
+  if (!miniEq) return;
+  const bars = miniEq.querySelectorAll("span");
+  stopMiniEqualizerTweens();
+  if (window.gsap) {
+    bars.forEach((bar, i) => {
+      const tw = gsap.to(bar, {
+        height: () => 3 + Math.random() * 10,
+        duration: 0.28 + Math.random() * 0.22,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: i * 0.06,
+      });
+      miniEqTweens.push(tw);
+    });
+  }
+}
+
+function stopMiniEqualizerTweens() {
+  miniEqTweens.forEach(t => t.kill());
+  miniEqTweens = [];
+  const miniEq = document.getElementById("miniEq");
+  if (miniEq && window.gsap) {
+    miniEq.querySelectorAll("span").forEach(bar => gsap.to(bar, { height: 3, duration: 0.2 }));
+  }
+}
+
+function initMiniPlayer() {
+  const np = readNowPlaying();
+  if (!np || !np.id) return;
+
+  const miniPlayer = document.getElementById("miniPlayer");
+  const miniCover = document.getElementById("miniCover");
+  const miniTitle = document.getElementById("miniTitle");
+  const miniChannel = document.getElementById("miniChannel");
+  const miniInfoLink = document.getElementById("miniInfoLink");
+  const miniPlayBtn = document.getElementById("miniPlayBtn");
+  const miniCloseBtn = document.getElementById("miniCloseBtn");
+
+  miniCover.src = `https://i.ytimg.com/vi/${np.id}/mqdefault.jpg`;
+  miniTitle.textContent = np.title || "Bilinmeyen Şarkı";
+  miniChannel.textContent = np.channel || "";
+  miniInfoLink.href = `player.html?v=${encodeURIComponent(np.id)}&t=${encodeURIComponent(np.title || "")}&c=${encodeURIComponent(np.channel || "")}`;
+
+  miniPlayer.classList.remove("hidden");
+  requestAnimationFrame(() => miniPlayer.classList.add("visible"));
+
+  createYtPlayer("ytMiniHost", np.id, {
+    onReady: (e) => {
+      if (typeof np.volume === "number") e.target.setVolume(np.volume);
+      if (np.progress) e.target.seekTo(np.progress, true);
+      if (np.isPlaying !== false) {
+        e.target.playVideo();
+      } else {
+        miniPlayBtn.textContent = "▶";
+      }
+      miniSaveInterval = setInterval(writeNowPlayingProgress, 1000);
+    },
+    onStateChange: (e) => {
+      if (e.data === YT.PlayerState.PLAYING) {
+        miniIsPlaying = true;
+        miniPlayBtn.textContent = "❚❚";
+        startMiniEqualizer();
+      } else if (e.data === YT.PlayerState.PAUSED) {
+        miniIsPlaying = false;
+        miniPlayBtn.textContent = "▶";
+        stopMiniEqualizerTweens();
+      } else if (e.data === YT.PlayerState.ENDED) {
+        miniIsPlaying = false;
+        stopMiniEqualizerTweens();
+        clearNowPlaying();
+        closeMiniPlayer();
+      }
+      writeNowPlayingProgress();
+    },
+  }).then((player) => {
+    miniYtPlayer = player;
+  });
+
+  miniPlayBtn.addEventListener("click", () => {
+    if (!miniYtPlayer) return;
+    if (miniIsPlaying) {
+      miniYtPlayer.pauseVideo();
+    } else {
+      miniYtPlayer.playVideo();
+    }
+  });
+
+  function closeMiniPlayer() {
+    if (miniSaveInterval) clearInterval(miniSaveInterval);
+    if (miniYtPlayer && miniYtPlayer.stopVideo) miniYtPlayer.stopVideo();
+    clearNowPlaying();
+    miniPlayer.classList.remove("visible");
+    setTimeout(() => miniPlayer.classList.add("hidden"), 300);
+  }
+
+  miniCloseBtn.addEventListener("click", closeMiniPlayer);
+
+  window.addEventListener("pagehide", writeNowPlayingProgress);
+}
+
 // ---- DOM ----
 const songGrid = document.getElementById("songGrid");
 const statusBar = document.getElementById("statusBar");
@@ -67,6 +207,7 @@ function init() {
   allSongs = cached && cached.length ? cached : SEED_SONGS.slice();
 
   renderGrid();
+  initMiniPlayer();
 
   genreButtons.forEach(btn => {
     btn.addEventListener("click", () => {
