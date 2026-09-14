@@ -1,6 +1,3 @@
-// Basit YouTube IFrame Player API yükleyici / sarmalayıcı.
-// Kullanım: loadYouTubeAPI().then(() => createYtPlayer(containerId, videoId, callbacks))
-
 let ytApiPromise = null;
 
 function loadYouTubeAPI() {
@@ -25,8 +22,8 @@ function createYtPlayer(containerId, videoId, { onReady, onStateChange } = {}) {
   return new Promise((resolve) => {
     loadYouTubeAPI().then((YT) => {
       const player = new YT.Player(containerId, {
-        height: "1",
-        width: "1",
+        height: "100%",
+        width: "100%",
         videoId: videoId,
         playerVars: {
           autoplay: 1,
