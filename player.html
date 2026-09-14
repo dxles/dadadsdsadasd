@@ -1,79 +1,85 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Şimdi Çalıyor — Çınla</title>
-<link rel="stylesheet" href="player.css">
-<style>
-  /* Ses butonundaki emojiyi kaldırıp temiz SVG ikon eklemek için ufak dokunuş */
-  #muteBtn svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nowtify Player</title>
+  <link rel="stylesheet" href="player.css">
+  <!-- GSAP Animasyon Kütüphanesi -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
 
-<div class="bg-blur" id="bgBlur"></div>
-<div class="bg-overlay"></div>
+  <!-- Arka Plan Blurlu Kapak -->
+  <div class="bg-blur" id="bgBlur"></div>
+  <div class="bg-overlay"></div>
 
-<a href="index.html" class="back-link" id="backLink">← Listeye dön</a>
+  <!-- Geri Dönüş Butonu -->
+  <a href="index.html" class="back-link" id="backLink">← Geri Dön</a>
 
-<div class="stage" id="stage">
-  <div class="now-row">
-    <div class="cover-wrap" id="coverWrap">
-      <img id="coverImg" class="cover" alt="">
-    </div>
-    <div class="track-meta">
-      <div id="trackTitle" class="track-title">—</div>
-      <div id="trackChannel" class="track-channel">—</div>
-      <div class="progress-area">
-        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
-        <div class="time-row">
-          <span id="curTime">0:00</span>
-          <span id="durTime">0:00</span>
+  <!-- Ana Sahne -->
+  <div class="stage" id="stage">
+    <div class="now-row">
+      <div class="cover-wrap" id="coverWrap">
+        <img src="" alt="Kapak" class="cover" id="coverImg">
+      </div>
+      <div class="track-meta">
+        <div class="track-title" id="trackTitle">Şarkı Yükleniyor...</div>
+        <div class="track-channel" id="trackChannel">Sanatçı</div>
+        
+        <!-- İlerleme Çubuğu -->
+        <div class="progress-area">
+          <input type="range" id="seekBar" value="0" min="0" max="100">
+          <div class="time-row">
+            <span id="curTime">0:00</span>
+            <span id="durTime">0:00</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="equalizer-container" id="equalizer" aria-hidden="true">
-  <span></span><span></span><span></span><span></span>
-</div>
+  <!-- Equalizer -->
+  <div class="equalizer-container" id="equalizer">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
 
-<div class="lyrics-container" id="lyricsContainerOuter">
-  <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
-  <div id="lyricsContent"></div>
-</div>
+  <!-- Şarkı Sözleri (Sağ Kayan Alan) -->
+  <div class="lyrics-container" id="lyricsContainerOuter">
+    <div class="lyrics-status" id="lyricsStatus">Sözler yükleniyor...</div>
+    <div id="lyricsContent"></div>
+  </div>
 
-<div class="controls">
-  <button id="shuffleBtn" class="ctrl-btn toggle-btn" title="Karıştır">⤨</button>
-  <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲</button>
-  <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
-  <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">⟳</button>
-  <button id="repeatBtn" class="ctrl-btn toggle-btn" title="Tekrarla">↻</button>
-  <span class="ctrl-sep"></span>
-  
-  <!-- Emoji kaldırıldı, yerine SVG ses ikonu getirildi -->
-  <button id="muteBtn" class="ctrl-btn" title="Sesi kapat/aç">
-    <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-  </button>
-  
-  <input type="range" id="volumeSlider" min="0" max="100" value="100" step="1" title="Ses seviyesi">
-</div>
+  <!-- YouTube Video Alanı (Başlangıçta gizli host) -->
+  <div id="ytPlayerHost"></div>
 
-<button id="videoToggleBtn">Video Göster</button>
-<button id="videoHideBtn">Videoyu Gizle</button>
+  <!-- Video Modu Çerçevesi -->
+  <div class="video-frame-wrap" id="videoFrame">
+    <button id="videoHideBtn">Videoyu Kapat</button>
+  </div>
 
-<div class="video-frame-wrap" id="videoFrame"></div>
+  <!-- Video Modu Açma Butonu -->
+  <button id="videoToggleBtn">Videoyu Göster</button>
 
-<div id="ytPlayerHost"></div>
+  <!-- Alt Kontrol Barı -->
+  <div class="controls">
+    <button class="ctrl-btn toggle-btn" id="shuffleBtn" title="Karıştır">🔀</button>
+    <button class="ctrl-btn" id="backBtn" title="10 Saniye Geri">⏮</button>
+    <button class="ctrl-btn play-btn" id="playBtn" title="Oynat/Durdur">▶</button>
+    <button class="ctrl-btn" id="fwdBtn" title="10 Saniye İleri">⏭</button>
+    <button class="ctrl-btn toggle-btn" id="repeatBtn" title="Tekrarla">🔁</button>
+    
+    <div class="ctrl-sep"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="youtube-player.js"></script>
-<script src="player.js"></script>
+    <button class="ctrl-btn" id="muteBtn" title="Sessiz">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+    </button>
+    <input type="range" id="volumeSlider" min="0" max="100" value="100">
+  </div>
+
+  <!-- Ana JavaScript Dosyamız (youtube-player.js artık yok, hepsi içinde) -->
+  <script src="player.js"></script>
 </body>
 </html>
