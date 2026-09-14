@@ -21,10 +21,13 @@ html, body {
   overflow: hidden;
 }
 
-/* ---- Kapağa dayalı bulanık tam ekran arka plan (Asla simsiyah kalmaz) ---- */
+/* ---- Kapağa dayalı bulanık tam ekran arka plan ----
+   Kapak resmi yüklenemezse (404 vb.) JS bir gradyana düşer,
+   bu yüzden ekran asla simsiyah/boş kalmaz. */
 .bg-blur {
   position: fixed;
   inset: 0;
+  background-color: #1a1a1a;
   background-size: cover;
   background-position: center;
   filter: blur(30px) brightness(0.4);
@@ -85,6 +88,7 @@ html, body {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
   transition: transform 0.1s ease, box-shadow 0.05s ease;
   flex-shrink: 0;
+  background: linear-gradient(160deg, #333, #111);
 }
 
 .cover {
@@ -121,6 +125,13 @@ html, body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.player-status {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: #ff8a80;
+  min-height: 1.2em;
 }
 
 .progress-area {
@@ -296,6 +307,8 @@ html, body {
   transition: color 0.2s ease;
 }
 
+.ctrl-btn svg { display: block; }
+
 .ctrl-btn:hover { color: var(--accent); }
 
 .toggle-btn { color: #767676; position: relative; }
@@ -358,27 +371,46 @@ html, body {
   background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--vol-fill, 100%), rgba(255,255,255,0.2) var(--vol-fill, 100%));
 }
 
-#videoToggleBtn {
+/* ---- Sağ/sol alt köşe butonları (video göster/gizle, çalma sırası) ----
+   Not: Bu butonlar artık video kutusunun İÇİNDE değil, body'nin doğrudan
+   altında; bu yüzden position:fixed her zaman gerçek ekrana göre çalışır
+   (video kutusundaki transform bu butonları artık etkilemiyor ve video
+   bu yüzden butonun üstünü kapatmıyor). */
+.corner-btn {
   position: fixed;
   bottom: 30px;
   left: 30px;
-  z-index: 20;
+  z-index: 50;
+  display: none;
+  align-items: center;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.15);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 10px 20px;
+  padding: 10px 18px;
   border-radius: 50px;
   cursor: pointer;
-  font-size: 0.95em;
+  font-size: 0.9em;
   font-weight: 700;
   font-family: inherit;
   backdrop-filter: blur(5px);
   transition: all 0.3s ease;
 }
 
-#videoToggleBtn:hover { background: rgba(255, 255, 255, 0.3); }
+.corner-btn:hover { background: rgba(255, 255, 255, 0.3); }
 
-/* ---- YouTube Player ve Video Modu (Garanti Çözüm) ---- */
+#videoToggleBtn { display: flex; }
+.video-active #videoToggleBtn { display: none; }
+
+#videoHideBtn { display: none; }
+.video-active #videoHideBtn { display: flex; }
+
+.queue-toggle-btn {
+  left: auto;
+  right: 30px;
+}
+
+/* ---- YouTube Player ve Video Modu ---- */
 #ytPlayerHost {
   position: absolute;
   width: 1px;
@@ -388,8 +420,7 @@ html, body {
   overflow: hidden;
 }
 
-body.video-active #ytPlayerHost,
-#ytPlayerHost.video-mode {
+body.video-active #ytPlayerHost {
   position: fixed !important;
   top: 50% !important;
   left: 50% !important;
@@ -398,33 +429,13 @@ body.video-active #ytPlayerHost,
   max-width: 900px !important;
   aspect-ratio: 16 / 9 !important;
   height: auto !important;
-  z-index: 9999 !important;
+  z-index: 15 !important;
   opacity: 1 !important;
   pointer-events: auto !important;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
   border-radius: 12px;
   display: block !important;
-}
-
-.video-frame-wrap {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-  width: 90vw;
-  max-width: 900px;
-  aspect-ratio: 16 / 9;
-  display: none;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
-  opacity: 0;
-  transition: opacity 0.6s ease-in-out;
-}
-
-.video-frame-wrap iframe {
-  width: 100%;
-  height: 100%;
-  display: block;
+  overflow: hidden;
 }
 
 .video-active .stage,
@@ -433,33 +444,6 @@ body.video-active #ytPlayerHost,
   visibility: hidden;
   transition: opacity 0.5s ease, visibility 0.5s linear 0.5s;
 }
-
-.video-active .video-frame-wrap {
-  display: block;
-  opacity: 1;
-  transition-delay: 0.5s;
-}
-
-#videoHideBtn {
-  position: fixed;
-  bottom: 30px;
-  left: 30px;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 10px 20px;
-  border-radius: 50px;
-  cursor: pointer;
-  font-size: 0.95em;
-  font-weight: 700;
-  font-family: inherit;
-  backdrop-filter: blur(5px);
-  display: none;
-}
-
-.video-active #videoHideBtn { display: block; }
-.video-active #videoToggleBtn { display: none; }
 
 @media (max-width: 900px) {
   .lyrics-container { display: none; }
@@ -477,4 +461,120 @@ body.video-active #ytPlayerHost,
   .track-title { font-size: 1.5em; }
   .controls { flex-wrap: wrap; justify-content: center; width: calc(100vw - 40px); }
   #volumeSlider { width: 60px; }
+  .corner-btn span { display: none; }
+  .corner-btn { padding: 10px; }
+}
+
+/* ---- Çalma Sırası Paneli ---- */
+.queue-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 340px;
+  max-width: 85vw;
+  background: rgba(18, 18, 18, 0.97);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 60;
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  gap: 14px;
+}
+
+.queue-panel.open { transform: translateX(0); }
+
+.queue-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.queue-panel-head h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.queue-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.queue-close-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.queue-item:hover { background: rgba(255, 255, 255, 0.06); }
+
+.queue-item.current {
+  background: rgba(29, 185, 84, 0.15);
+  cursor: default;
+}
+
+.queue-item .qi-index {
+  width: 18px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.queue-item.current .qi-index { color: var(--accent); font-weight: 700; }
+
+.queue-item img {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #222;
+}
+
+.queue-item .qi-info { min-width: 0; flex: 1; }
+
+.queue-item .qi-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-item .qi-channel {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
 }

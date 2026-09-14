@@ -5,11 +5,13 @@ function initPlayerPage() {
   const channel = params.get("c") || "";
 
   const NOWPLAYING_KEY = "cinla_now_playing";
+  const QUEUE_KEY = "cinla_queue";
   const coverUrl = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "";
 
   // HTML Elementleri
   const trackTitleEl = document.getElementById("trackTitle");
   const trackChannelEl = document.getElementById("trackChannel");
+  const playerStatusEl = document.getElementById("playerStatus");
   const coverImgEl = document.getElementById("coverImg");
   const bgBlurEl = document.getElementById("bgBlur");
   const playBtn = document.getElementById("playBtn");
@@ -32,27 +34,47 @@ function initPlayerPage() {
   const backLink = document.getElementById("backLink");
   const muteBtn = document.getElementById("muteBtn");
   const volumeSlider = document.getElementById("volumeSlider");
+  const queueToggleBtn = document.getElementById("queueToggleBtn");
+  const queueCloseBtn = document.getElementById("queueCloseBtn");
+  const queuePanel = document.getElementById("queuePanel");
+  const queueListEl = document.getElementById("queueList");
 
   // Bilgileri ve arka planı anında set et
   if (trackTitleEl) trackTitleEl.textContent = rawTitle;
   if (trackChannelEl) trackChannelEl.textContent = channel;
-  if (coverImgEl) coverImgEl.src = coverUrl;
-  
-  if (bgBlurEl && coverUrl) {
-    bgBlurEl.style.backgroundImage = `url(${coverUrl})`;
+
+  // Kapak / arka plan: resim gerçekten yüklenirse uygula, 404/başarısız
+  // olursa ekranı boş bırakmak yerine yumuşak bir gradyana düş.
+  function applyCoverImages() {
+    if (!coverUrl) {
+      if (bgBlurEl) bgBlurEl.style.backgroundImage = "";
+      return;
+    }
+    const probe = new Image();
+    probe.onload = () => {
+      if (bgBlurEl) bgBlurEl.style.backgroundImage = `url("${coverUrl}")`;
+      if (coverImgEl) coverImgEl.src = coverUrl;
+    };
+    probe.onerror = () => {
+      if (bgBlurEl) bgBlurEl.style.backgroundImage = "";
+      if (coverImgEl) coverImgEl.removeAttribute("src");
+    };
+    probe.src = coverUrl;
   }
+  applyCoverImages();
 
   let ytPlayer = null;
   let isPlaying = false;
   let duration = 0;
   let seeking = false;
-  let syncedLyrics = null; 
+  let syncedLyrics = null;
   let currentLineIndex = -1;
   let repeatOn = false;
   let shuffleOn = false;
   let isMuted = false;
   let lastVolume = 100;
   let startAt = 0;
+  let progressIntervalId = null;
 
   function formatTime(sec) {
     if (!isFinite(sec) || sec < 0) sec = 0;
@@ -60,6 +82,20 @@ function initPlayerPage() {
     const s = Math.floor(sec % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
+
+  function setStatus(msg) {
+    if (playerStatusEl) playerStatusEl.textContent = msg || "";
+  }
+
+  // ---- İkonlar (emoji yok, kendi SVG'lerimiz) ----
+  const ICON_PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+  function setPlayIcon(playing) {
+    if (!playBtn) return;
+    playBtn.innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+  }
+  setPlayIcon(false);
 
   // ---- LocalStorage Yönetimi ----
   function readNowPlaying() {
@@ -101,6 +137,99 @@ function initPlayerPage() {
       if (typeof np.volume === "number") lastVolume = np.volume;
     }
   })();
+
+  // ---- Çalma Sırası (Queue) ----
+  function readQueue() {
+    try {
+      const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || "null");
+      return Array.isArray(q) && q.length ? q : null;
+    } catch {
+      return null;
+    }
+  }
+
+  let queue = readQueue() || [];
+  let queueIndex = queue.findIndex(s => s && s.id === videoId);
+  if (queueIndex === -1) {
+    // Kayıtlı bir sıra yoksa (örn. doğrudan bağlantıyla gelindiyse),
+    // en azından çalan şarkıyı tek elemanlı bir sıra olarak göster.
+    queue = [{ id: videoId, title: rawTitle, channel }, ...queue.filter(s => s.id !== videoId)];
+    queueIndex = 0;
+  }
+
+  function escapeHtmlLocal(str) {
+    const div = document.createElement("div");
+    div.textContent = str || "";
+    return div.innerHTML;
+  }
+
+  function goToSong(song) {
+    writeNowPlaying({ progress: 0, isPlaying: true });
+    window.location.href = `player.html?v=${encodeURIComponent(song.id)}&t=${encodeURIComponent(song.title)}&c=${encodeURIComponent(song.channel || "")}`;
+  }
+
+  function renderQueuePanel() {
+    if (!queueListEl) return;
+    if (!queue.length) {
+      queueListEl.innerHTML = `<p class="queue-empty">Sırada başka şarkı yok.</p>`;
+      return;
+    }
+    queueListEl.innerHTML = "";
+    queue.forEach((song, i) => {
+      const item = document.createElement("div");
+      item.className = "queue-item" + (i === queueIndex ? " current" : "");
+      const thumb = `https://i.ytimg.com/vi/${song.id}/default.jpg`;
+      item.innerHTML = `
+        <span class="qi-index">${i + 1}</span>
+        <img src="${thumb}" alt="" loading="lazy">
+        <div class="qi-info">
+          <p class="qi-title">${escapeHtmlLocal(song.title)}</p>
+          <p class="qi-channel">${escapeHtmlLocal(song.channel || "")}</p>
+        </div>
+      `;
+      if (i !== queueIndex) {
+        item.addEventListener("click", () => goToSong(song));
+      }
+      queueListEl.appendChild(item);
+    });
+  }
+  renderQueuePanel();
+
+  if (queueToggleBtn && queuePanel) {
+    queueToggleBtn.addEventListener("click", () => {
+      queuePanel.classList.add("open");
+    });
+  }
+  if (queueCloseBtn && queuePanel) {
+    queueCloseBtn.addEventListener("click", () => {
+      queuePanel.classList.remove("open");
+    });
+  }
+
+  function playNextInQueue({ auto = true } = {}) {
+    if (!queue.length) {
+      clearNowPlaying();
+      return;
+    }
+    if (queue.length === 1) {
+      if (auto) clearNowPlaying();
+      return;
+    }
+    let nextIdx;
+    if (shuffleOn) {
+      do {
+        nextIdx = Math.floor(Math.random() * queue.length);
+      } while (nextIdx === queueIndex);
+    } else {
+      nextIdx = (queueIndex + 1) % queue.length;
+    }
+    const next = queue[nextIdx];
+    if (!next) {
+      clearNowPlaying();
+      return;
+    }
+    goToSong(next);
+  }
 
   // ---- GSAP Animasyonu ----
   if (window.gsap) {
@@ -158,7 +287,7 @@ function initPlayerPage() {
     }
   }
 
-  // ---- YouTube Player Kurulumu (youtube-player.js ile gelen createYtPlayer fonksiyonu kullanılıyor) ----
+  // ---- YouTube Player Kurulumu ----
   if (videoId && typeof createYtPlayer === "function") {
     createYtPlayer("ytPlayerHost", videoId, {
       onReady: (e) => {
@@ -176,26 +305,32 @@ function initPlayerPage() {
       onStateChange: (e) => {
         if (e.data === YT.PlayerState.PLAYING) {
           isPlaying = true;
-          if (playBtn) playBtn.textContent = "❚❚";
+          setPlayIcon(true);
           startEqualizer();
           writeNowPlaying();
         } else if (e.data === YT.PlayerState.PAUSED) {
           isPlaying = false;
-          if (playBtn) playBtn.textContent = "▶";
+          setPlayIcon(false);
           stopEqualizer();
           writeNowPlaying();
         } else if (e.data === YT.PlayerState.ENDED) {
           isPlaying = false;
-          if (playBtn) playBtn.textContent = "▶";
+          setPlayIcon(false);
           stopEqualizer();
           handleTrackEnd();
         }
+      },
+      onError: () => {
+        setStatus("Bu video oynatılamıyor, sıradaki şarkıya geçiliyor...");
+        stopEqualizer();
+        setTimeout(() => playNextInQueue({ auto: true }), 1600);
       },
     }).then((player) => {
       ytPlayer = player;
     });
   } else {
     if (lyricsStatus) lyricsStatus.textContent = "Oynatıcı yüklenemedi.";
+    setStatus("Şarkı bilgisi bulunamadı.");
   }
 
   function handleTrackEnd() {
@@ -204,26 +339,13 @@ function initPlayerPage() {
       ytPlayer.playVideo();
       return;
     }
-    if (shuffleOn) {
-      playRandomFromLibrary();
-      return;
-    }
     clearNowPlaying();
-  }
-
-  function playRandomFromLibrary() {
-    try {
-      const userSongs = JSON.parse(localStorage.getItem("cinla_user_songs") || "[]");
-      const cached = JSON.parse(localStorage.getItem("cinla_cached_songs") || "null") || [];
-      const pool = [...userSongs, ...cached].filter(s => s.id !== videoId);
-      if (!pool.length) return;
-      const next = pool[Math.floor(Math.random() * pool.length)];
-      window.location.href = `player.html?v=${encodeURIComponent(next.id)}&t=${encodeURIComponent(next.title)}&c=${encodeURIComponent(next.channel || "")}`;
-    } catch {}
+    playNextInQueue({ auto: true });
   }
 
   function startProgressLoop() {
-    setInterval(() => {
+    if (progressIntervalId) clearInterval(progressIntervalId);
+    progressIntervalId = setInterval(() => {
       if (!ytPlayer || typeof ytPlayer.getDuration !== "function") return;
 
       const d = ytPlayer.getDuration();
@@ -304,9 +426,9 @@ function initPlayerPage() {
   function updateVolumeIcon(vol) {
     if (!muteBtn) return;
     if (vol === 0) {
-      muteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C22.63 14.85 23 13.48 23 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
+      muteBtn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C22.63 14.85 23 13.48 23 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
     } else {
-      muteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
+      muteBtn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
     }
   }
 
@@ -346,7 +468,6 @@ function initPlayerPage() {
   if (videoToggleBtn && videoFrame && ytPlayerHost) {
     videoToggleBtn.addEventListener("click", () => {
       videoFrame.appendChild(ytPlayerHost);
-      ytPlayerHost.classList.add("video-mode");
       document.body.classList.add("video-active");
     });
   }
@@ -354,7 +475,6 @@ function initPlayerPage() {
   if (videoHideBtn && ytPlayerHost) {
     videoHideBtn.addEventListener("click", () => {
       document.body.appendChild(ytPlayerHost);
-      ytPlayerHost.classList.remove("video-mode");
       document.body.classList.remove("video-active");
     });
   }
@@ -441,7 +561,7 @@ function initPlayerPage() {
         });
       } else if (best.plainLyrics) {
         if (lyricsStatus) lyricsStatus.textContent = "";
-        lyricsContent.innerHTML = `<div class="lyric-plain">${best.plainLyrics}</div>`;
+        lyricsContent.innerHTML = `<div class="lyric-plain">${escapeHtmlLocal(best.plainLyrics)}</div>`;
       } else {
         if (lyricsStatus) lyricsStatus.textContent = "Söz bulunamadı.";
       }

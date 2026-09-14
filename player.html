@@ -26,7 +26,8 @@
       <div class="track-meta">
         <div class="track-title" id="trackTitle">Şarkı Yükleniyor...</div>
         <div class="track-channel" id="trackChannel">Sanatçı</div>
-        
+        <div class="player-status" id="playerStatus"></div>
+
         <!-- İlerleme Çubuğu -->
         <div class="progress-area">
           <input type="range" id="seekBar" value="0" min="0" max="100">
@@ -54,21 +55,63 @@
   <div id="ytPlayerHost"></div>
 
   <!-- Video Modu Çerçevesi -->
-  <div class="video-frame-wrap" id="videoFrame">
-    <button id="videoHideBtn">Videoyu Kapat</button>
-  </div>
+  <div class="video-frame-wrap" id="videoFrame"></div>
 
-  <!-- Video Modu Açma Butonu -->
-  <button id="videoToggleBtn">Videoyu Göster</button>
+  <!-- Video Modu Açma / Kapatma Butonları -->
+  <button id="videoToggleBtn" class="corner-btn">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="13" height="13" rx="2"/><path d="M20 8.5l-4.5 3 4.5 3v-6z"/></svg>
+    <span>Videoyu Göster</span>
+  </button>
+  <button id="videoHideBtn" class="corner-btn">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    <span>Videoyu Kapat</span>
+  </button>
+
+  <!-- Çalma Sırası Butonu -->
+  <button id="queueToggleBtn" class="corner-btn queue-toggle-btn" title="Çalma sırası">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
+    <span>Sıra</span>
+  </button>
+
+  <!-- Çalma Sırası Paneli -->
+  <div class="queue-panel" id="queuePanel">
+    <div class="queue-panel-head">
+      <h3>Çalma Sırası</h3>
+      <button id="queueCloseBtn" class="queue-close-btn" title="Kapat">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="queue-list" id="queueList"></div>
+  </div>
 
   <!-- Alt Kontrol Barı -->
   <div class="controls">
-    <button class="ctrl-btn toggle-btn" id="shuffleBtn" title="Karıştır">🔀</button>
-    <button class="ctrl-btn" id="backBtn" title="10 Saniye Geri">⏮</button>
-    <button class="ctrl-btn play-btn" id="playBtn" title="Oynat/Durdur">▶</button>
-    <button class="ctrl-btn" id="fwdBtn" title="10 Saniye İleri">⏭</button>
-    <button class="ctrl-btn toggle-btn" id="repeatBtn" title="Tekrarla">🔁</button>
-    
+    <button class="ctrl-btn toggle-btn" id="shuffleBtn" title="Karıştır">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h3.5c1.5 0 2.5.6 3.5 2l5 8c1 1.4 2 2 3.5 2H21"/>
+        <path d="M16 4l5 4-5 4"/>
+        <path d="M3 18h3.5c1.5 0 2.5-.6 3.5-2l1-1.6"/>
+        <path d="M16 20l5-4-5-4"/>
+      </svg>
+    </button>
+    <button class="ctrl-btn" id="backBtn" title="10 Saniye Geri">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+    </button>
+    <button class="ctrl-btn play-btn" id="playBtn" title="Oynat/Durdur">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="fwdBtn" title="10 Saniye İleri">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M13 6v12l8.5-6L13 6zm-.5 6l-8.5-6v12l8.5-6z"/></svg>
+    </button>
+    <button class="ctrl-btn toggle-btn" id="repeatBtn" title="Tekrarla">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7a4 4 0 0 1 4-4h9"/>
+        <path d="M17 3l3 3-3 3"/>
+        <path d="M20 17a4 4 0 0 1-4 4H7"/>
+        <path d="M7 21l-3-3 3-3"/>
+      </svg>
+    </button>
+
     <div class="ctrl-sep"></div>
 
     <button class="ctrl-btn" id="muteBtn" title="Sessiz">

@@ -3,6 +3,7 @@ const STORAGE_KEYS = {
   apiKey: "cinla_yt_api_key",
   userSongs: "cinla_user_songs",
   cachedSongs: "cinla_cached_songs",
+  queue: "cinla_queue",
 };
 
 function getApiKey() {
@@ -38,6 +39,16 @@ function setCachedSongs(songs) {
 // ---- Durum ----
 let currentGenre = "hepsi";
 let allSongs = [];
+let lastRenderedSongs = [];
+
+function saveQueue(songs) {
+  try {
+    const queue = songs.map(s => ({ id: s.id, title: s.title, channel: s.channel || "" }));
+    localStorage.setItem(STORAGE_KEYS.queue, JSON.stringify(queue));
+  } catch {
+    /* sessiz geç */
+  }
+}
 
 // ---- Mini oynatıcı: player.html'den "Listeye dön" ile ayrılınca müzik
 // burada, sağ altta gizli bir YouTube player ile devam eder. ----
@@ -209,6 +220,15 @@ function init() {
   renderGrid();
   initMiniPlayer();
 
+  // Bir şarkı kartına tıklandığında, o an ekranda görünen listeyi
+  // "çalma sırası" olarak kaydet; player.html şarkı bitince buradan
+  // sıradakine otomatik geçer.
+  songGrid.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (!link || !songGrid.contains(link)) return;
+    saveQueue(lastRenderedSongs);
+  });
+
   genreButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       genreButtons.forEach(b => b.classList.remove("active"));
@@ -303,6 +323,8 @@ function renderGrid(list) {
   } else {
     songs = [...userSongs, ...allSongs].filter(s => s.genre === currentGenre);
   }
+
+  lastRenderedSongs = songs;
 
   const flipState = window.gsap && window.Flip ? Flip.getState(songGrid.children) : null;
 

@@ -18,7 +18,7 @@ function loadYouTubeAPI() {
   return ytApiPromise;
 }
 
-function createYtPlayer(containerId, videoId, { onReady, onStateChange } = {}) {
+function createYtPlayer(containerId, videoId, { onReady, onStateChange, onError } = {}) {
   return new Promise((resolve) => {
     loadYouTubeAPI().then((YT) => {
       const player = new YT.Player(containerId, {
@@ -39,6 +39,11 @@ function createYtPlayer(containerId, videoId, { onReady, onStateChange } = {}) {
           },
           onStateChange: (e) => {
             if (onStateChange) onStateChange(e);
+          },
+          onError: (e) => {
+            // 2 = gecersiz video ID, 5 = HTML5 oynatici hatasi,
+            // 100 = video bulunamadi/kaldirilmis, 101/150 = gomulmesine izin verilmiyor
+            if (onError) onError(e);
           },
         },
       });
