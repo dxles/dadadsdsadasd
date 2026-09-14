@@ -256,11 +256,11 @@ async function doAddSearch() {
   if (!q) return;
 
   if (!key) {
-    addResults.innerHTML = `<p style="color:var(--text-dim); font-size:13px;">Arama yapmak için önce sol alttan YouTube API anahtarını kaydet.</p>`;
+    addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Arama yapmak için önce sol alttan YouTube API anahtarını kaydet.</p>`;
     return;
   }
 
-  addResults.innerHTML = `<p style="color:var(--text-dim); font-size:13px;">Aranıyor...</p>`;
+  addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Aranıyor...</p>`;
 
   try {
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=10&q=${encodeURIComponent(q)}&key=${key}`;
@@ -273,7 +273,7 @@ async function doAddSearch() {
     const items = data.items || [];
 
     if (!items.length) {
-      addResults.innerHTML = `<p style="color:var(--text-dim); font-size:13px;">Sonuç bulunamadı.</p>`;
+      addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Sonuç bulunamadı.</p>`;
       return;
     }
 
@@ -303,7 +303,7 @@ async function doAddSearch() {
       addResults.appendChild(row);
     });
   } catch (err) {
-    addResults.innerHTML = `<p style="color:var(--text-dim); font-size:13px;">Hata: ${escapeHtml(err.message)}</p>`;
+    addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Hata: ${escapeHtml(err.message)}</p>`;
   }
 }
 

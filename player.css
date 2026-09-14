@@ -1,23 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
 :root {
-  --bg: #141414;
-  --panel: #1b1b1b;
-  --card: #202020;
-  --text: #e8e6e2;
-  --text-dim: #8a8a8a;
-  --text-faint: #55524c;
-  --border: #2c2c2c;
-  --accent: #c9a15a;
-  --radius: 6px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --spotify-green: #1DB954;
+    --dark-bg: #121212;
+    --dark-card: #181818;
+    --dark-hover: #282828;
+    --text-primary: #FFFFFF;
+    --text-secondary: #B3B3B3;
+    --text-faint: #6a6a6a;
+    --danger: #E22134;
+    --radius: 10px;
 }
 
 * { box-sizing: border-box; }
 
 html, body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
+  background: var(--dark-bg);
+  color: var(--text-primary);
+  font-family: 'Montserrat', sans-serif;
   min-height: 100%;
 }
 
@@ -25,13 +26,15 @@ html, body {
   position: fixed;
   top: 20px;
   left: 24px;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   text-decoration: none;
   font-size: 14px;
+  font-weight: 500;
   opacity: 0;
+  transition: color 0.3s ease;
 }
 
-.back-link:hover { color: var(--text); }
+.back-link:hover { color: var(--text-primary); }
 
 .player-page {
   max-width: 480px;
@@ -40,17 +43,17 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 22px;
 }
 
 .cover-wrap {
   position: relative;
   width: 260px;
   height: 260px;
-  border-radius: var(--radius);
+  border-radius: 15px;
   overflow: hidden;
-  background: var(--card);
-  border: 1px solid var(--border);
+  background: var(--dark-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   opacity: 0;
 }
 
@@ -71,9 +74,9 @@ html, body {
   gap: 3px;
   height: 20px;
   padding: 6px 8px;
-  background: rgba(20, 20, 20, 0.55);
+  background: rgba(18, 18, 18, 0.6);
   backdrop-filter: blur(2px);
-  border-radius: 4px;
+  border-radius: 6px;
   opacity: 0;
   pointer-events: none;
 }
@@ -82,7 +85,7 @@ html, body {
   display: block;
   width: 3px;
   height: 4px;
-  background: var(--accent);
+  background: var(--spotify-green);
   border-radius: 1px;
   transform-origin: bottom center;
 }
@@ -93,16 +96,16 @@ html, body {
 }
 
 .track-info h1 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px;
   letter-spacing: -0.01em;
 }
 
 .track-info p {
   margin: 0;
-  color: var(--text-dim);
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-size: 15px;
 }
 
 .progress-area {
@@ -115,7 +118,7 @@ html, body {
 
 .time {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   width: 34px;
   flex-shrink: 0;
   text-align: center;
@@ -127,7 +130,7 @@ html, body {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: var(--border);
+  background: var(--dark-hover);
   border-radius: 2px;
   outline: none;
 }
@@ -137,7 +140,7 @@ html, body {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--spotify-green);
   cursor: pointer;
 }
 
@@ -145,7 +148,7 @@ html, body {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--spotify-green);
   border: none;
   cursor: pointer;
 }
@@ -160,14 +163,15 @@ html, body {
 .ctrl-btn {
   background: none;
   border: none;
-  color: var(--text);
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
+  transition: color 0.2s ease;
 }
 
-.ctrl-btn:hover { color: var(--accent); }
+.ctrl-btn:hover { color: var(--spotify-green); }
 
 .toggle-btn {
   color: var(--text-faint);
@@ -176,7 +180,7 @@ html, body {
 }
 
 .toggle-btn.active {
-  color: var(--accent);
+  color: var(--spotify-green);
 }
 
 .toggle-btn.active::after {
@@ -187,16 +191,16 @@ html, body {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--spotify-green);
   transform: translateX(-50%);
 }
 
 .play-btn {
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #1a1408;
+  background: var(--spotify-green);
+  color: #fff;
   font-size: 18px;
   display: flex;
   align-items: center;
@@ -205,15 +209,14 @@ html, body {
 }
 
 .play-btn:hover {
-  background: #d6ad63;
-  color: #1a1408;
+  background: #1ed760;
+  color: #fff;
 }
 
 .lyrics-box {
   width: 100%;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--dark-card);
+  border-radius: 15px;
   padding: 4px 0;
   height: 380px;
   display: flex;
@@ -222,7 +225,7 @@ html, body {
 }
 
 .lyrics-status {
-  color: var(--text-dim);
+  color: var(--text-secondary);
   font-size: 13px;
   padding: 16px 20px 0;
 }
@@ -281,18 +284,18 @@ html, body {
 }
 
 .lyric-line.near {
-  color: var(--text-dim);
+  color: var(--text-secondary);
 }
 
 .lyric-line.active {
-  color: var(--text);
+  color: var(--text-primary);
   filter: blur(0);
 }
 
 .lyric-plain {
   font-size: 14px;
   line-height: 1.7;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   white-space: pre-line;
   padding: 20px 26px;
 }
