@@ -46,23 +46,17 @@ function initPlayerPage() {
   // Kapak / arka plan: resim gerçekten yüklenirse uygula, 404/başarısız
   // olursa ekranı boş bırakmak yerine yumuşak bir gradyana düş.
   function applyCoverImages() {
-    if (!coverUrl) {
+  if (!coverUrl) return;
+  if (bgBlurEl) bgBlurEl.style.backgroundImage = `url("${coverUrl}")`;
+  if (coverImgEl) {
+    coverImgEl.src = coverUrl;
+    coverImgEl.onerror = () => {
       if (bgBlurEl) bgBlurEl.style.backgroundImage = "";
-      return;
-    }
-    const probe = new Image();
-    probe.onload = () => {
-      if (bgBlurEl) bgBlurEl.style.backgroundImage = `url("${coverUrl}")`;
-      if (coverImgEl) coverImgEl.src = coverUrl;
     };
-    probe.onerror = () => {
-      if (bgBlurEl) bgBlurEl.style.backgroundImage = "";
-      if (coverImgEl) coverImgEl.removeAttribute("src");
-    };
-    probe.src = coverUrl;
   }
-  applyCoverImages();
-
+}
+applyCoverImages();
+  
   let ytPlayer = null;
   let isPlaying = false;
   let duration = 0;
