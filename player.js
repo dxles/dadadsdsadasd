@@ -34,7 +34,7 @@ function initPlayerPage() {
   const muteBtn = document.getElementById("muteBtn");
   const volumeSlider = document.getElementById("volumeSlider");
 
-  // Bilgileri ve arka planı anında set et (Simsiyah kalma sorununa kesin çözüm)
+  // Bilgileri ve arka planı anında set et
   if (trackTitleEl) trackTitleEl.textContent = rawTitle;
   if (trackChannelEl) trackChannelEl.textContent = channel;
   if (coverImgEl) coverImgEl.src = coverUrl;
@@ -51,7 +51,6 @@ function initPlayerPage() {
   let currentLineIndex = -1;
   let repeatOn = false;
   let shuffleOn = false;
-  let videoModeOn = false;
   let isMuted = false;
   let lastVolume = 100;
   let startAt = 0;
@@ -104,7 +103,7 @@ function initPlayerPage() {
     }
   })();
 
-  // ---- GSAP Giriş Animasyonu ----
+  // ---- GSAP Animasyonu ----
   if (window.gsap) {
     const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
     tl.to(".back-link", { opacity: 1, duration: 0.4 }, 0)
@@ -112,7 +111,7 @@ function initPlayerPage() {
       .fromTo(".controls", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25");
   }
 
-  // ---- Equalizer & Bass Simülasyonu ----
+  // ---- Equalizer ----
   let eqTweens = [];
   let bassInterval = null;
 
@@ -160,7 +159,7 @@ function initPlayerPage() {
     }
   }
 
-  // ---- YouTube Player Kurulumu (Elindeki youtube-player.js ile uyumlu) ----
+  // ---- YouTube Player Kurulumu ----
   if (videoId && typeof createYtPlayer === "function") {
     createYtPlayer("ytPlayerHost", videoId, {
       onReady: (e) => {
@@ -197,7 +196,7 @@ function initPlayerPage() {
       ytPlayer = player;
     });
   } else {
-    if (lyricsStatus) lyricsStatus.textContent = "Oynatıcı yüklenemedi veya geçersiz ID.";
+    if (lyricsStatus) lyricsStatus.textContent = "Oynatıcı yüklenemedi.";
   }
 
   function handleTrackEnd() {
@@ -249,7 +248,7 @@ function initPlayerPage() {
     }, 1000);
   }
 
-  // ---- Kontrol Butonları ----
+  // ---- Kontroller ----
   if (playBtn) {
     playBtn.addEventListener("click", () => {
       if (!ytPlayer) return;
@@ -276,10 +275,6 @@ function initPlayerPage() {
     repeatBtn.addEventListener("click", () => {
       repeatOn = !repeatOn;
       repeatBtn.classList.toggle("active", repeatOn);
-      if (repeatOn && shuffleOn) {
-        shuffleOn = false;
-        if (shuffleBtn) shuffleBtn.classList.remove("active");
-      }
     });
   }
 
@@ -287,10 +282,6 @@ function initPlayerPage() {
     shuffleBtn.addEventListener("click", () => {
       shuffleOn = !shuffleOn;
       shuffleBtn.classList.toggle("active", shuffleOn);
-      if (shuffleOn && repeatOn) {
-        repeatOn = false;
-        if (repeatBtn) repeatBtn.classList.remove("active");
-      }
     });
   }
 
@@ -310,7 +301,7 @@ function initPlayerPage() {
     });
   }
 
-  // ---- Ses ve Video Modu (SVG Ses İkonu) ----
+  // ---- Ses ve Video Modu ----
   function updateVolumeIcon(vol) {
     if (!muteBtn) return;
     if (vol === 0) {
@@ -377,7 +368,7 @@ function initPlayerPage() {
     });
   }
 
-  // ---- Şarkı Sözleri (Lrclib API) ----
+  // ---- Sözler (Lrclib API) ----
   function cleanTitleForSearch(title) {
     return title.replace(/\(.*?\)/g, "").replace(/\[.*?\]/g, "").replace(/official.*/gi, "").trim();
   }
