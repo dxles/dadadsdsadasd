@@ -21,14 +21,14 @@ html, body {
   overflow: hidden;
 }
 
-/* ---- Kapağa dayalı bulanık tam ekran arka plan (Nowtify) ---- */
+/* ---- Kapağa dayalı bulanık tam ekran arka plan (Asla simsiyah kalmaz) ---- */
 .bg-blur {
   position: fixed;
   inset: 0;
   background-size: cover;
   background-position: center;
   filter: blur(30px) brightness(0.4);
-  transform: scale(1.1); /* Kenarlardaki boşlukları kapatır */
+  transform: scale(1.1);
   z-index: -2;
   transition: all 0.5s ease;
 }
@@ -54,7 +54,6 @@ html, body {
 
 .back-link:hover { color: var(--text-primary); }
 
-/* ---- Ana sahne: Nowtify'daki #main ile birebir aynı hizalama ---- */
 .stage {
   position: relative;
   height: 100vh;
@@ -124,7 +123,6 @@ html, body {
   text-overflow: ellipsis;
 }
 
-/* ---- İlerleme çubuğu (Nowtify tarzı ince bar) ---- */
 .progress-area {
   margin-top: 15px;
   width: 300px;
@@ -179,7 +177,6 @@ html, body {
   margin-top: 5px;
 }
 
-/* ---- Equalizer (Nowtify: sol altta dans eden barlar) ---- */
 .equalizer-container {
   position: fixed;
   bottom: 120px;
@@ -204,7 +201,6 @@ html, body {
   transform-origin: bottom;
 }
 
-/* ---- Sözler: sağda kayan lyrics (Nowtify) ---- */
 .lyrics-container {
   position: fixed;
   top: 50%;
@@ -263,7 +259,6 @@ html, body {
 
 .video-active .lyrics-container { opacity: 0 !important; }
 
-/* ---- Kontrol barı: alt ortada minimal ---- */
 .controls {
   position: fixed;
   left: 50%;
@@ -363,7 +358,6 @@ html, body {
   background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--vol-fill, 100%), rgba(255,255,255,0.2) var(--vol-fill, 100%));
 }
 
-/* ---- Video Göster/Gizle butonu (Nowtify: sol alt köşe pill) ---- */
 #videoToggleBtn {
   position: fixed;
   bottom: 30px;
@@ -384,7 +378,7 @@ html, body {
 
 #videoToggleBtn:hover { background: rgba(255, 255, 255, 0.3); }
 
-/* ---- YouTube Player Host ve Video Modu (DÜZELTİLEN KISIM) ---- */
+/* ---- YouTube Player ve Video Modu (Garanti Çözüm) ---- */
 #ytPlayerHost {
   position: absolute;
   width: 1px;
@@ -394,7 +388,6 @@ html, body {
   overflow: hidden;
 }
 
-/* Video moduna geçince ekranda ortalanıp devleşecek yapı */
 body.video-active #ytPlayerHost,
 #ytPlayerHost.video-mode {
   position: fixed !important;
@@ -410,9 +403,9 @@ body.video-active #ytPlayerHost,
   pointer-events: auto !important;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
   border-radius: 12px;
+  display: block !important;
 }
 
-/* Sizin orijinal video sarmalayıcınız */
 .video-frame-wrap {
   position: fixed;
   top: 50%;
@@ -468,11 +461,8 @@ body.video-active #ytPlayerHost,
 .video-active #videoHideBtn { display: block; }
 .video-active #videoToggleBtn { display: none; }
 
-/* ---- Responsive ---- */
 @media (max-width: 900px) {
-  .lyrics-container {
-    display: none;
-  }
+  .lyrics-container { display: none; }
 }
 
 @media (max-width: 640px) {
