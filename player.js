@@ -5,11 +5,9 @@ function initPlayerPage() {
   const channel = params.get("c") || "";
 
   const NOWPLAYING_KEY = "cinla_now_playing";
-  
-  // Kapak görseli öncelikli olarak YouTube High Quality üzerinden çekiliyor
   const coverUrl = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "";
 
-  // HTML Elementleri Bağlantıları
+  // HTML Elementleri
   const trackTitleEl = document.getElementById("trackTitle");
   const trackChannelEl = document.getElementById("trackChannel");
   const coverImgEl = document.getElementById("coverImg");
@@ -36,7 +34,7 @@ function initPlayerPage() {
   const muteBtn = document.getElementById("muteBtn");
   const volumeSlider = document.getElementById("volumeSlider");
 
-  // Bilgileri ve arkaplanı anında set et (Simsiyah kalma sorunu kökten çözüldü)
+  // Bilgileri ve arka planı anında set et (Simsiyah kalma sorununa kesin çözüm)
   if (trackTitleEl) trackTitleEl.textContent = rawTitle;
   if (trackChannelEl) trackChannelEl.textContent = channel;
   if (coverImgEl) coverImgEl.src = coverUrl;
@@ -162,7 +160,7 @@ function initPlayerPage() {
     }
   }
 
-  // ---- YouTube Player Kurulumu ----
+  // ---- YouTube Player Kurulumu (Elindeki youtube-player.js ile uyumlu) ----
   if (videoId && typeof createYtPlayer === "function") {
     createYtPlayer("ytPlayerHost", videoId, {
       onReady: (e) => {
@@ -174,7 +172,7 @@ function initPlayerPage() {
         if (startAt > 0) {
           e.target.seekTo(startAt, true);
         }
-        e.target.playVideo(); // Otomatik oynatma tetikleyicisi
+        e.target.playVideo();
         startProgressLoop();
       },
       onStateChange: (e) => {
@@ -199,7 +197,7 @@ function initPlayerPage() {
       ytPlayer = player;
     });
   } else {
-    if (lyricsStatus) lyricsStatus.textContent = "Geçersiz şarkı veya oynatıcı yüklenemedi.";
+    if (lyricsStatus) lyricsStatus.textContent = "Oynatıcı yüklenemedi veya geçersiz ID.";
   }
 
   function handleTrackEnd() {
@@ -222,14 +220,13 @@ function initPlayerPage() {
       const pool = [...userSongs, ...cached].filter(s => s.id !== videoId);
       if (!pool.length) return;
       const next = pool[Math.floor(Math.random() * pool.length)];
-      const url = `player.html?v=${encodeURIComponent(next.id)}&t=${encodeURIComponent(next.title)}&c=${encodeURIComponent(next.channel || "")}`;
-      window.location.href = url;
+      window.location.href = `player.html?v=${encodeURIComponent(next.id)}&t=${encodeURIComponent(next.title)}&c=${encodeURIComponent(next.channel || "")}`;
     } catch {}
   }
 
   function startProgressLoop() {
     setInterval(() => {
-      if (!ytPlayer) return;
+      if (!ytPlayer || typeof ytPlayer.getDuration !== "function") return;
 
       const d = ytPlayer.getDuration();
       if (d && d !== duration) {
@@ -253,30 +250,25 @@ function initPlayerPage() {
   }
 
   // ---- Kontrol Butonları ----
-  function togglePlay() {
-    if (!ytPlayer) return;
-    if (isPlaying) {
-      ytPlayer.pauseVideo();
-    } else {
-      ytPlayer.playVideo();
-    }
+  if (playBtn) {
+    playBtn.addEventListener("click", () => {
+      if (!ytPlayer) return;
+      if (isPlaying) ytPlayer.pauseVideo();
+      else ytPlayer.playVideo();
+    });
   }
-
-  if (playBtn) playBtn.addEventListener("click", togglePlay);
 
   if (backBtn) {
     backBtn.addEventListener("click", () => {
       if (!ytPlayer) return;
-      const t = Math.max(0, ytPlayer.getCurrentTime() - 10);
-      ytPlayer.seekTo(t, true);
+      ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() - 10), true);
     });
   }
 
   if (fwdBtn) {
     fwdBtn.addEventListener("click", () => {
       if (!ytPlayer) return;
-      const t = Math.min(duration, ytPlayer.getCurrentTime() + 10);
-      ytPlayer.seekTo(t, true);
+      ytPlayer.seekTo(Math.min(duration, ytPlayer.getCurrentTime() + 10), true);
     });
   }
 
@@ -288,7 +280,6 @@ function initPlayerPage() {
         shuffleOn = false;
         if (shuffleBtn) shuffleBtn.classList.remove("active");
       }
-      if (window.gsap) gsap.fromTo(repeatBtn, { scale: 0.8 }, { scale: 1, duration: 0.3, ease: "back.out(3)" });
     });
   }
 
@@ -298,9 +289,8 @@ function initPlayerPage() {
       shuffleBtn.classList.toggle("active", shuffleOn);
       if (shuffleOn && repeatOn) {
         repeatOn = false;
-        repeatBtn.classList.remove("active");
+        if (repeatBtn) repeatBtn.classList.remove("active");
       }
-      if (window.gsap) gsap.fromTo(shuffleBtn, { scale: 0.8 }, { scale: 1, duration: 0.3, ease: "back.out(3)" });
     });
   }
 
@@ -309,27 +299,23 @@ function initPlayerPage() {
       if (!duration) return;
       seeking = true;
       seekBar.style.setProperty("--fill", seekBar.value + "%");
-      const t = (seekBar.value / 100) * duration;
-      if (curTimeEl) curTimeEl.textContent = formatTime(t);
+      if (curTimeEl) curTimeEl.textContent = formatTime((seekBar.value / 100) * duration);
     });
 
     seekBar.addEventListener("change", () => {
       if (!ytPlayer || !duration) { seeking = false; return; }
-      const t = (seekBar.value / 100) * duration;
-      ytPlayer.seekTo(t, true);
+      ytPlayer.seekTo((seekBar.value / 100) * duration, true);
       seeking = false;
       writeNowPlaying();
     });
   }
 
-  // ---- Ses ve Mute Kontrolleri (Emoji kalktı, SVG ikon yönetiliyor) ----
+  // ---- Ses ve Video Modu (SVG Ses İkonu) ----
   function updateVolumeIcon(vol) {
     if (!muteBtn) return;
     if (vol === 0) {
-      // Sessiz İkonu
       muteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C22.63 14.85 23 13.48 23 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>`;
     } else {
-      // Normal Ses İkonu
       muteBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
     }
   }
@@ -367,82 +353,39 @@ function initPlayerPage() {
     });
   }
 
-  // ---- Video Modu ----
-  function enterVideoMode() {
-    videoModeOn = true;
-    if (videoFrame && ytPlayerHost) {
+  if (videoToggleBtn && videoFrame && ytPlayerHost) {
+    videoToggleBtn.addEventListener("click", () => {
       videoFrame.appendChild(ytPlayerHost);
       ytPlayerHost.classList.add("video-mode");
-    }
-    document.body.classList.add("video-active");
+      document.body.classList.add("video-active");
+    });
   }
 
-  function exitVideoMode() {
-    videoModeOn = false;
-    if (ytPlayerHost) {
+  if (videoHideBtn && ytPlayerHost) {
+    videoHideBtn.addEventListener("click", () => {
       document.body.appendChild(ytPlayerHost);
       ytPlayerHost.classList.remove("video-mode");
-    }
-    document.body.classList.remove("video-active");
+      document.body.classList.remove("video-active");
+    });
   }
 
-  if (videoToggleBtn) videoToggleBtn.addEventListener("click", enterVideoMode);
-  if (videoHideBtn) videoHideBtn.addEventListener("click", exitVideoMode);
-
-  // ---- Listeye Dön / Sayfa Kapatma ----
   if (backLink) {
     backLink.addEventListener("click", (e) => {
       e.preventDefault();
       writeNowPlaying({ progress: ytPlayer ? ytPlayer.getCurrentTime() : startAt });
-
-      if (window.gsap && stage) {
-        gsap.to(stage, {
-          opacity: 0,
-          scale: 0.98,
-          duration: 0.2,
-          ease: "power1.in",
-          onComplete: () => { window.location.href = "index.html"; },
-        });
-      } else {
-        window.location.href = "index.html";
-      }
+      window.location.href = "index.html";
     });
   }
 
-  window.addEventListener("pagehide", () => {
-    if (videoId) writeNowPlaying({ progress: ytPlayer ? ytPlayer.getCurrentTime() : startAt });
-  });
-
   // ---- Şarkı Sözleri (Lrclib API) ----
   function cleanTitleForSearch(title) {
-    return title
-      .replace(/\(.*?\)/g, "")
-      .replace(/\[.*?\]/g, "")
-      .replace(/official\s*(video|audio|music video)?/gi, "")
-      .replace(/lyrics?/gi, "")
-      .replace(/hd|hq|4k/gi, "")
-      .trim();
-  }
-
-  function cleanChannelForArtist(name) {
-    return (name || "").replace(/\s*-\s*Topic\s*$/i, "").trim();
-  }
-
-  function parseArtistAndTrack(title) {
-    const cleaned = cleanTitleForSearch(title);
-    const parts = cleaned.split(/[-–—]/);
-    const cleanChannel = cleanChannelForArtist(channel);
-    if (parts.length >= 2) {
-      return { artist: parts[0].trim() || cleanChannel, track: parts.slice(1).join(" ").trim() };
-    }
-    return { artist: cleanChannel, track: cleaned };
+    return title.replace(/\(.*?\)/g, "").replace(/\[.*?\]/g, "").replace(/official.*/gi, "").trim();
   }
 
   function parseLRC(lrcText) {
     const lines = lrcText.split("\n");
     const result = [];
     const timeTag = /\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
-
     lines.forEach((line) => {
       const matches = [...line.matchAll(timeTag)];
       if (!matches.length) return;
@@ -451,109 +394,68 @@ function initPlayerPage() {
         const min = parseInt(m[1], 10);
         const sec = parseInt(m[2], 10);
         const ms = m[3] ? parseInt(m[3].padEnd(3, "0"), 10) : 0;
-        const time = min * 60 + sec + ms / 1000;
-        result.push({ time, text });
+        result.push({ time: min * 60 + sec + ms / 1000, text });
       });
     });
-
     return result.sort((a, b) => a.time - b.time);
-  }
-
-  function renderSyncedLyrics(lines) {
-    if (!lyricsContent) return;
-    lyricsContent.innerHTML = "";
-
-    lines.forEach((line, i) => {
-      const div = document.createElement("div");
-      div.className = "lyric-line";
-      div.dataset.index = i;
-      div.textContent = line.text || "♪";
-      div.addEventListener("click", () => {
-        if (ytPlayer) ytPlayer.seekTo(line.time, true);
-      });
-      lyricsContent.appendChild(div);
-    });
-  }
-
-  function renderPlainLyrics(text) {
-    if (!lyricsContent) return;
-    lyricsContent.innerHTML = `<div class="lyric-plain"></div>`;
-    const plainEl = lyricsContent.querySelector(".lyric-plain");
-    if (plainEl) plainEl.textContent = text;
   }
 
   function updateActiveLyric(currentTime) {
     if (!syncedLyrics || !syncedLyrics.length || !lyricsContent) return;
-
     let idx = -1;
     for (let i = 0; i < syncedLyrics.length; i++) {
-      if (syncedLyrics[i].time <= currentTime + 0.15) {
-        idx = i;
-      } else {
-        break;
-      }
+      if (syncedLyrics[i].time <= currentTime + 0.15) idx = i;
+      else break;
     }
-
     if (idx === currentLineIndex) return;
     currentLineIndex = idx;
 
-    const allLines = lyricsContent.querySelectorAll(".lyric-line");
-    allLines.forEach((el) => {
-      const lineIdx = parseInt(el.dataset.index, 10);
-      el.classList.toggle("active", lineIdx === idx);
+    lyricsContent.querySelectorAll(".lyric-line").forEach((el) => {
+      el.classList.toggle("active", parseInt(el.dataset.index, 10) === idx);
     });
 
     if (idx >= 0 && lyricsContainerOuter) {
       const activeEl = lyricsContent.querySelector(`[data-index="${idx}"]`);
       if (activeEl) {
-        const offset = activeEl.offsetTop - (lyricsContainerOuter.clientHeight / 2) + (activeEl.clientHeight / 2);
-        lyricsContainerOuter.scrollTo({ top: offset, behavior: "smooth" });
+        lyricsContainerOuter.scrollTo({
+          top: activeEl.offsetTop - (lyricsContainerOuter.clientHeight / 2) + (activeEl.clientHeight / 2),
+          behavior: "smooth"
+        });
       }
     }
-  }
-
-  async function searchLrclib(track, artist) {
-    const url = `https://lrclib.net/api/search?track_name=${encodeURIComponent(track)}${artist ? `&artist_name=${encodeURIComponent(artist)}` : ""}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("lrclib isteği başarısız");
-    return res.json();
   }
 
   async function fetchLyrics() {
-    const { artist, track } = parseArtistAndTrack(rawTitle);
-
-    if (!track) {
-      if (lyricsStatus) lyricsStatus.textContent = "Söz bulunamadı.";
-      return;
-    }
-
+    const track = cleanTitleForSearch(rawTitle);
+    if (!track) return;
     if (lyricsStatus) lyricsStatus.textContent = "Sözler yükleniyor...";
-
     try {
-      let results = await searchLrclib(track, artist);
+      const res = await fetch(`https://lrclib.net/api/search?track_name=${encodeURIComponent(track)}`);
+      const results = await res.json();
       if (!results || !results.length) {
-        results = await searchLrclib(track, "");
-      }
-
-      if (!results || !results.length) {
-        if (lyricsStatus) lyricsStatus.textContent = "Bu şarkı için söz bulunamadı.";
+        if (lyricsStatus) lyricsStatus.textContent = "Şarkı sözü bulunamadı.";
         return;
       }
-
-      const withSynced = results.find(r => r.syncedLyrics);
-      const best = withSynced || results[0];
-
+      const best = results.find(r => r.syncedLyrics) || results[0];
       if (best.syncedLyrics) {
         syncedLyrics = parseLRC(best.syncedLyrics);
         if (lyricsStatus) lyricsStatus.textContent = "";
-        renderSyncedLyrics(syncedLyrics);
+        lyricsContent.innerHTML = "";
+        syncedLyrics.forEach((line, i) => {
+          const div = document.createElement("div");
+          div.className = "lyric-line";
+          div.dataset.index = i;
+          div.textContent = line.text || "♪";
+          div.addEventListener("click", () => { if (ytPlayer) ytPlayer.seekTo(line.time, true); });
+          lyricsContent.appendChild(div);
+        });
       } else if (best.plainLyrics) {
         if (lyricsStatus) lyricsStatus.textContent = "";
-        renderPlainLyrics(best.plainLyrics);
+        lyricsContent.innerHTML = `<div class="lyric-plain">${best.plainLyrics}</div>`;
       } else {
-        if (lyricsStatus) lyricsStatus.textContent = "Bu şarkı için söz bulunamadı.";
+        if (lyricsStatus) lyricsStatus.textContent = "Söz bulunamadı.";
       }
-    } catch (err) {
+    } catch {
       if (lyricsStatus) lyricsStatus.textContent = "Sözler alınamadı.";
     }
   }
