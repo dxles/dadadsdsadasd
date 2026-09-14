@@ -15,22 +15,89 @@ let duration = 0;
 let seeking = false;
 let syncedLyrics = null; // [{time: seconds, text: string}]
 let currentLineIndex = -1;
+let repeatOn = false;
+let shuffleOn = false;
 
 const playBtn = document.getElementById("playBtn");
 const backBtn = document.getElementById("backBtn");
 const fwdBtn = document.getElementById("fwdBtn");
+const repeatBtn = document.getElementById("repeatBtn");
+const shuffleBtn = document.getElementById("shuffleBtn");
 const seekBar = document.getElementById("seekBar");
 const curTimeEl = document.getElementById("curTime");
 const durTimeEl = document.getElementById("durTime");
 const lyricsStatus = document.getElementById("lyricsStatus");
 const lyricsContent = document.getElementById("lyricsContent");
 const lyricsViewport = document.getElementById("lyricsViewport");
+const coverWrap = document.querySelector(".cover-wrap");
+const equalizer = document.getElementById("equalizer");
+const eqBars = equalizer ? equalizer.querySelectorAll("span") : [];
 
 function formatTime(sec) {
   if (!isFinite(sec) || sec < 0) sec = 0;
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// ---- GSAP giriş animasyonu ----
+if (window.gsap) {
+  const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+  tl.to(".back-link", { opacity: 1, duration: 0.4 })
+    .fromTo(".cover-wrap", { opacity: 0, y: 16, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.55 }, "-=0.2")
+    .fromTo(".track-info", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 }, "-=0.3")
+    .fromTo(".progress-area", { opacity: 0 }, { opacity: 1, duration: 0.35 }, "-=0.2")
+    .fromTo(".controls", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35 }, "-=0.2")
+    .fromTo(".lyrics-box", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
+
+  // Kapak sürükle/döndür — sadece küçük, geri yaylanan bir etkileşim
+  if (window.Draggable) {
+    Draggable.create(coverWrap, {
+      type: "rotation",
+      inertia: false,
+      onDragEnd: function () {
+        gsap.to(coverWrap, { rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.4)" });
+      },
+    });
+  }
+
+  // Play butonuna basınca hafif "tık" tepkisi
+  if (window.Observer) {
+    Observer.create({
+      target: playBtn,
+      type: "pointer",
+      onPress: () => gsap.to(playBtn, { scale: 0.9, duration: 0.12, ease: "power1.out" }),
+      onRelease: () => gsap.to(playBtn, { scale: 1, duration: 0.3, ease: "back.out(2)" }),
+    });
+  }
+}
+
+// ---- Equalizer animasyonu ----
+let eqTweens = [];
+function startEqualizer() {
+  if (!window.gsap || !eqBars.length) return;
+  stopEqualizer();
+  gsap.to(equalizer, { opacity: 1, duration: 0.25 });
+  eqBars.forEach((bar, i) => {
+    const tw = gsap.to(bar, {
+      height: () => 6 + Math.random() * 14,
+      duration: 0.35 + Math.random() * 0.25,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut",
+      delay: i * 0.05,
+    });
+    eqTweens.push(tw);
+  });
+}
+
+function stopEqualizer() {
+  eqTweens.forEach(t => t.kill());
+  eqTweens = [];
+  if (window.gsap) {
+    gsap.to(equalizer, { opacity: 0, duration: 0.25 });
+    eqBars.forEach(bar => gsap.to(bar, { height: 4, duration: 0.2 }));
+  }
 }
 
 // ---- YouTube player kurulumu ----
@@ -43,12 +110,16 @@ if (videoId) {
       if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
         playBtn.textContent = "❚❚";
+        startEqualizer();
       } else if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         playBtn.textContent = "▶";
+        stopEqualizer();
       } else if (e.data === YT.PlayerState.ENDED) {
         isPlaying = false;
         playBtn.textContent = "▶";
+        stopEqualizer();
+        handleTrackEnd();
       }
     },
   }).then((player) => {
@@ -56,6 +127,33 @@ if (videoId) {
   });
 } else {
   lyricsStatus.textContent = "Geçersiz şarkı.";
+}
+
+function handleTrackEnd() {
+  if (repeatOn) {
+    ytPlayer.seekTo(0, true);
+    ytPlayer.playVideo();
+    return;
+  }
+  if (shuffleOn) {
+    playRandomFromLibrary();
+    return;
+  }
+}
+
+// "Karıştır" açıkken şarkı bitince kütüphaneden rastgele birini çalar (varsa).
+function playRandomFromLibrary() {
+  try {
+    const userSongs = JSON.parse(localStorage.getItem("cinla_user_songs") || "[]");
+    const cached = JSON.parse(localStorage.getItem("cinla_cached_songs") || "null") || [];
+    const pool = [...userSongs, ...cached].filter(s => s.id !== videoId);
+    if (!pool.length) return;
+    const next = pool[Math.floor(Math.random() * pool.length)];
+    const url = `player.html?v=${encodeURIComponent(next.id)}&t=${encodeURIComponent(next.title)}&c=${encodeURIComponent(next.channel || "")}`;
+    window.location.href = url;
+  } catch {
+    /* sessiz geç */
+  }
 }
 
 function startProgressLoop() {
@@ -100,6 +198,26 @@ fwdBtn.addEventListener("click", () => {
   if (!ytPlayer) return;
   const t = Math.min(duration, ytPlayer.getCurrentTime() + 10);
   ytPlayer.seekTo(t, true);
+});
+
+repeatBtn.addEventListener("click", () => {
+  repeatOn = !repeatOn;
+  repeatBtn.classList.toggle("active", repeatOn);
+  if (repeatOn && shuffleOn) {
+    shuffleOn = false;
+    shuffleBtn.classList.remove("active");
+  }
+  if (window.gsap) gsap.fromTo(repeatBtn, { scale: 0.8 }, { scale: 1, duration: 0.3, ease: "back.out(3)" });
+});
+
+shuffleBtn.addEventListener("click", () => {
+  shuffleOn = !shuffleOn;
+  shuffleBtn.classList.toggle("active", shuffleOn);
+  if (shuffleOn && repeatOn) {
+    repeatOn = false;
+    repeatBtn.classList.remove("active");
+  }
+  if (window.gsap) gsap.fromTo(shuffleBtn, { scale: 0.8 }, { scale: 1, duration: 0.3, ease: "back.out(3)" });
 });
 
 seekBar.addEventListener("input", () => {
@@ -210,15 +328,22 @@ function updateActiveLyric(currentTime) {
   const allLines = lyricsContent.querySelectorAll(".lyric-line");
   allLines.forEach((el) => {
     const lineIdx = parseInt(el.dataset.index, 10);
+    const wasActive = el.classList.contains("active");
     el.classList.remove("active", "near");
     if (lineIdx === idx) {
       el.classList.add("active");
+      if (window.gsap && !wasActive) {
+        gsap.fromTo(el, { scale: 0.96 }, { scale: 1.04, duration: 0.35, ease: "power2.out" });
+      }
     } else if (Math.abs(lineIdx - idx) === 1) {
       el.classList.add("near");
+      if (window.gsap) gsap.to(el, { scale: 0.98, duration: 0.35, ease: "power2.out" });
+    } else if (window.gsap) {
+      gsap.to(el, { scale: 0.96, duration: 0.35, ease: "power2.out" });
     }
   });
 
-  if (idx >= 0) {
+  if (idx >= 0 && lyricsViewport) {
     const activeEl = lyricsContent.querySelector(`[data-index="${idx}"]`);
     if (activeEl) {
       // Aktif satırı viewport'un ortasına kaydır (Spotify/Apple Music tarzı)

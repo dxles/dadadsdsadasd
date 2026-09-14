@@ -14,6 +14,9 @@
 
   <div class="cover-wrap">
     <img id="coverImg" class="cover" alt="">
+    <div class="equalizer" id="equalizer" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
   </div>
 
   <div class="track-info">
@@ -28,20 +31,27 @@
   </div>
 
   <div class="controls">
+    <button id="shuffleBtn" class="ctrl-btn toggle-btn" title="Karıştır">⤨</button>
     <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲ 10</button>
     <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
     <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">10 ⟳</button>
+    <button id="repeatBtn" class="ctrl-btn toggle-btn" title="Tekrarla">⟳</button>
   </div>
 
   <div class="lyrics-box">
     <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
-    <div id="lyricsContent" class="lyrics-content"></div>
+    <div id="lyricsViewport" class="lyrics-viewport">
+      <div id="lyricsContent" class="lyrics-content"></div>
+    </div>
   </div>
 
 </div>
 
 <div id="ytPlayerHost" style="position:absolute; width:1px; height:1px; overflow:hidden; opacity:0;"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Draggable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="youtube-player.js"></script>
 <script src="player.js"></script>
 </body>

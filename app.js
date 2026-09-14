@@ -75,6 +75,11 @@ function init() {
     });
   });
 
+  if (window.gsap) {
+    gsap.from(".sidebar", { x: -16, opacity: 0, duration: 0.45, ease: "power2.out" });
+    gsap.from(".content-header, .status-bar", { y: -8, opacity: 0, duration: 0.4, ease: "power2.out", delay: 0.1 });
+  }
+
   searchBtn.addEventListener("click", doSiteSearch);
   searchInput.addEventListener("keydown", e => { if (e.key === "Enter") doSiteSearch(); });
 
@@ -87,10 +92,24 @@ function init() {
 
   addSongBtn.addEventListener("click", () => {
     addModal.classList.remove("hidden");
+    if (window.gsap) {
+      gsap.fromTo(addModal, { opacity: 0 }, { opacity: 1, duration: 0.2 });
+      gsap.fromTo(".modal-box", { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" });
+    }
     addSearchInput.focus();
   });
-  closeModalBtn.addEventListener("click", () => addModal.classList.add("hidden"));
-  addModal.addEventListener("click", e => { if (e.target === addModal) addModal.classList.add("hidden"); });
+
+  function closeAddModal() {
+    if (window.gsap) {
+      gsap.to(".modal-box", { opacity: 0, y: 8, scale: 0.97, duration: 0.2, ease: "power1.in" });
+      gsap.to(addModal, { opacity: 0, duration: 0.2, onComplete: () => addModal.classList.add("hidden") });
+    } else {
+      addModal.classList.add("hidden");
+    }
+  }
+
+  closeModalBtn.addEventListener("click", closeAddModal);
+  addModal.addEventListener("click", e => { if (e.target === addModal) closeAddModal(); });
   addSearchBtn.addEventListener("click", doAddSearch);
   addSearchInput.addEventListener("keydown", e => { if (e.key === "Enter") doAddSearch(); });
 }
@@ -114,6 +133,8 @@ function renderGrid(list) {
     songs = [...userSongs, ...allSongs].filter(s => s.genre === currentGenre);
   }
 
+  const flipState = window.gsap && window.Flip ? Flip.getState(songGrid.children) : null;
+
   songGrid.innerHTML = "";
 
   if (!songs.length) {
@@ -136,6 +157,19 @@ function renderGrid(list) {
     `;
     songGrid.appendChild(card);
   });
+
+  if (window.gsap) {
+    if (window.Flip && flipState) {
+      Flip.from(flipState, { duration: 0.4, ease: "power2.out", absolute: false });
+    }
+    gsap.from(songGrid.children, {
+      opacity: 0,
+      y: 10,
+      duration: 0.35,
+      stagger: { each: 0.02, from: "start" },
+      ease: "power1.out",
+    });
+  }
 }
 
 function escapeHtml(str) {
