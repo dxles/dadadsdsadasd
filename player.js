@@ -24,6 +24,7 @@ const curTimeEl = document.getElementById("curTime");
 const durTimeEl = document.getElementById("durTime");
 const lyricsStatus = document.getElementById("lyricsStatus");
 const lyricsContent = document.getElementById("lyricsContent");
+const lyricsViewport = document.getElementById("lyricsViewport");
 
 function formatTime(sec) {
   if (!isFinite(sec) || sec < 0) sec = 0;
@@ -36,18 +37,12 @@ function formatTime(sec) {
 if (videoId) {
   createYtPlayer("ytPlayerHost", videoId, {
     onReady: () => {
-      duration = ytPlayer.getDuration();
-      durTimeEl.textContent = formatTime(duration);
       startProgressLoop();
     },
     onStateChange: (e) => {
       if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
         playBtn.textContent = "❚❚";
-        if (!duration) {
-          duration = ytPlayer.getDuration();
-          durTimeEl.textContent = formatTime(duration);
-        }
       } else if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         playBtn.textContent = "▶";
@@ -65,7 +60,17 @@ if (videoId) {
 
 function startProgressLoop() {
   setInterval(() => {
-    if (!ytPlayer || seeking) return;
+    if (!ytPlayer) return;
+
+    // Süre YouTube'dan geç gelebilir; her tick'te kontrol edip yakala.
+    const d = ytPlayer.getDuration();
+    if (d && d !== duration) {
+      duration = d;
+      durTimeEl.textContent = formatTime(duration);
+    }
+
+    if (seeking) return;
+
     const t = ytPlayer.getCurrentTime();
     curTimeEl.textContent = formatTime(t);
     if (duration > 0) {
@@ -98,13 +103,14 @@ fwdBtn.addEventListener("click", () => {
 });
 
 seekBar.addEventListener("input", () => {
+  if (!duration) return;
   seeking = true;
   const t = (seekBar.value / 100) * duration;
   curTimeEl.textContent = formatTime(t);
 });
 
 seekBar.addEventListener("change", () => {
-  if (!ytPlayer) return;
+  if (!ytPlayer || !duration) { seeking = false; return; }
   const t = (seekBar.value / 100) * duration;
   ytPlayer.seekTo(t, true);
   seeking = false;
@@ -112,7 +118,6 @@ seekBar.addEventListener("change", () => {
 
 // ---- Lyrics: lrclib.net ----
 function cleanTitleForSearch(title) {
-  // "Sanatçı - Şarkı (Official Video)" gibi kalıplardan gereksiz kısımları temizle
   return title
     .replace(/\(.*?\)/g, "")
     .replace(/\[.*?\]/g, "")
@@ -122,13 +127,19 @@ function cleanTitleForSearch(title) {
     .trim();
 }
 
+function cleanChannelForArtist(name) {
+  // YouTube'un otomatik sanatçı kanalları "İsim - Topic" şeklinde gelir.
+  return (name || "").replace(/\s*-\s*Topic\s*$/i, "").trim();
+}
+
 function parseArtistAndTrack(title) {
   const cleaned = cleanTitleForSearch(title);
   const parts = cleaned.split(/[-–—]/);
+  const cleanChannel = cleanChannelForArtist(channel);
   if (parts.length >= 2) {
-    return { artist: parts[0].trim(), track: parts.slice(1).join(" ").trim() };
+    return { artist: parts[0].trim() || cleanChannel, track: parts.slice(1).join(" ").trim() };
   }
-  return { artist: channel, track: cleaned };
+  return { artist: cleanChannel, track: cleaned };
 }
 
 function parseLRC(lrcText) {
@@ -154,6 +165,12 @@ function parseLRC(lrcText) {
 
 function renderSyncedLyrics(lines) {
   lyricsContent.innerHTML = "";
+
+  // Üstte ve altta boşluk dolgusu: ilk/son satır da ortalanabilsin diye.
+  const padTop = document.createElement("div");
+  padTop.className = "lyric-pad";
+  lyricsContent.appendChild(padTop);
+
   lines.forEach((line, i) => {
     const div = document.createElement("div");
     div.className = "lyric-line";
@@ -164,6 +181,10 @@ function renderSyncedLyrics(lines) {
     });
     lyricsContent.appendChild(div);
   });
+
+  const padBottom = document.createElement("div");
+  padBottom.className = "lyric-pad";
+  lyricsContent.appendChild(padBottom);
 }
 
 function renderPlainLyrics(text) {
@@ -176,25 +197,42 @@ function updateActiveLyric(currentTime) {
 
   let idx = -1;
   for (let i = 0; i < syncedLyrics.length; i++) {
-    if (syncedLyrics[i].time <= currentTime) {
+    if (syncedLyrics[i].time <= currentTime + 0.15) {
       idx = i;
     } else {
       break;
     }
   }
 
-  if (idx !== currentLineIndex) {
-    currentLineIndex = idx;
-    const prevActive = lyricsContent.querySelector(".lyric-line.active");
-    if (prevActive) prevActive.classList.remove("active");
-    if (idx >= 0) {
-      const el = lyricsContent.querySelector(`[data-index="${idx}"]`);
-      if (el) {
-        el.classList.add("active");
-        el.scrollIntoView({ block: "center", behavior: "smooth" });
-      }
+  if (idx === currentLineIndex) return;
+  currentLineIndex = idx;
+
+  const allLines = lyricsContent.querySelectorAll(".lyric-line");
+  allLines.forEach((el) => {
+    const lineIdx = parseInt(el.dataset.index, 10);
+    el.classList.remove("active", "near");
+    if (lineIdx === idx) {
+      el.classList.add("active");
+    } else if (Math.abs(lineIdx - idx) === 1) {
+      el.classList.add("near");
+    }
+  });
+
+  if (idx >= 0) {
+    const activeEl = lyricsContent.querySelector(`[data-index="${idx}"]`);
+    if (activeEl) {
+      // Aktif satırı viewport'un ortasına kaydır (Spotify/Apple Music tarzı)
+      const offset = activeEl.offsetTop - (lyricsViewport.clientHeight / 2) + (activeEl.clientHeight / 2);
+      lyricsViewport.scrollTo({ top: offset, behavior: "smooth" });
     }
   }
+}
+
+async function searchLrclib(track, artist) {
+  const url = `https://lrclib.net/api/search?track_name=${encodeURIComponent(track)}${artist ? `&artist_name=${encodeURIComponent(artist)}` : ""}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("lrclib isteği başarısız");
+  return res.json();
 }
 
 async function fetchLyrics() {
@@ -208,17 +246,17 @@ async function fetchLyrics() {
   lyricsStatus.textContent = "Sözler yükleniyor...";
 
   try {
-    const url = `https://lrclib.net/api/search?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("lrclib isteği başarısız");
-    const results = await res.json();
+    // Önce sanatçı + şarkı adıyla dene, sonuç yoksa sadece şarkı adıyla dene.
+    let results = await searchLrclib(track, artist);
+    if (!results || !results.length) {
+      results = await searchLrclib(track, "");
+    }
 
     if (!results || !results.length) {
       lyricsStatus.textContent = "Bu şarkı için söz bulunamadı.";
       return;
     }
 
-    // Senkronize sözü olan ilk sonucu tercih et
     const withSynced = results.find(r => r.syncedLyrics);
     const best = withSynced || results[0];
 
