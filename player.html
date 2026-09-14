@@ -14,61 +14,48 @@
 <a href="index.html" class="back-link" id="backLink">← Listeye dön</a>
 
 <div class="stage" id="stage">
-
-  <div class="cover-col">
+  <div class="now-row">
     <div class="cover-wrap" id="coverWrap">
       <img id="coverImg" class="cover" alt="">
     </div>
-    <div class="equalizer" id="equalizer" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span><span></span>
-    </div>
-  </div>
-
-  <div class="info-col">
     <div class="track-meta">
-      <p id="trackChannel" class="track-channel">—</p>
-      <h1 id="trackTitle" class="track-title">—</h1>
-    </div>
-
-    <div class="lyrics-box">
-      <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
-      <div id="lyricsViewport" class="lyrics-viewport">
-        <div id="lyricsContent" class="lyrics-content"></div>
+      <div id="trackTitle" class="track-title">—</div>
+      <div id="trackChannel" class="track-channel">—</div>
+      <div class="progress-area">
+        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
+        <div class="time-row">
+          <span id="curTime">0:00</span>
+          <span id="durTime">0:00</span>
+        </div>
       </div>
-    </div>
-
-    <div class="progress-area">
-      <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
-      <div class="time-row">
-        <span id="curTime" class="time">0:00</span>
-        <span id="durTime" class="time">0:00</span>
-      </div>
-    </div>
-
-    <div class="controls">
-      <button id="shuffleBtn" class="ctrl-btn toggle-btn" title="Karıştır">⤨</button>
-      <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲</button>
-      <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
-      <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">⟳</button>
-      <button id="repeatBtn" class="ctrl-btn toggle-btn" title="Tekrarla">↻</button>
-
-      <span class="ctrl-sep"></span>
-
-      <button id="muteBtn" class="ctrl-btn icon-btn" title="Sesi kapat/aç">🔊</button>
-      <input type="range" id="volumeSlider" min="0" max="100" value="100" step="1" title="Ses seviyesi">
-
-      <span class="ctrl-sep"></span>
-
-      <button id="videoToggleBtn" class="pill-btn">Videoyu Göster</button>
     </div>
   </div>
-
 </div>
 
-<div class="video-stage hidden" id="videoStage">
-  <div class="video-frame" id="videoFrame"></div>
-  <button id="videoHideBtn" class="pill-btn">Videoyu Gizle</button>
+<div class="equalizer-container" id="equalizer" aria-hidden="true">
+  <span></span><span></span><span></span><span></span>
 </div>
+
+<div class="lyrics-container" id="lyricsContainerOuter">
+  <div id="lyricsStatus" class="lyrics-status">Sözler yükleniyor...</div>
+  <div id="lyricsContent"></div>
+</div>
+
+<div class="controls">
+  <button id="shuffleBtn" class="ctrl-btn toggle-btn" title="Karıştır">⤨</button>
+  <button id="backBtn" class="ctrl-btn" title="10 sn geri">⟲</button>
+  <button id="playBtn" class="ctrl-btn play-btn" title="Oynat / Duraklat">▶</button>
+  <button id="fwdBtn" class="ctrl-btn" title="10 sn ileri">⟳</button>
+  <button id="repeatBtn" class="ctrl-btn toggle-btn" title="Tekrarla">↻</button>
+  <span class="ctrl-sep"></span>
+  <button id="muteBtn" class="ctrl-btn" title="Sesi kapat/aç">🔊</button>
+  <input type="range" id="volumeSlider" min="0" max="100" value="100" step="1" title="Ses seviyesi">
+</div>
+
+<button id="videoToggleBtn">Video Göster</button>
+<button id="videoHideBtn">Videoyu Gizle</button>
+
+<div class="video-frame-wrap" id="videoFrame"></div>
 
 <div id="ytPlayerHost"></div>
 
