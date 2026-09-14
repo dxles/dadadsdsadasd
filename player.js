@@ -3,11 +3,12 @@ const videoId = params.get("v");
 const rawTitle = params.get("t") || "Bilinmeyen Şarkı";
 const channel = params.get("c") || "";
 
+const coverUrl = videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : "";
+
 document.getElementById("trackTitle").textContent = rawTitle;
 document.getElementById("trackChannel").textContent = channel;
-document.getElementById("coverImg").src = videoId
-  ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-  : "";
+document.getElementById("coverImg").src = coverUrl;
+document.getElementById("bgBlur").style.backgroundImage = coverUrl ? `url(${coverUrl})` : "none";
 
 let ytPlayer = null;
 let isPlaying = false;
@@ -17,6 +18,7 @@ let syncedLyrics = null; // [{time: seconds, text: string}]
 let currentLineIndex = -1;
 let repeatOn = false;
 let shuffleOn = false;
+let videoModeOn = false;
 
 const playBtn = document.getElementById("playBtn");
 const backBtn = document.getElementById("backBtn");
@@ -29,9 +31,14 @@ const durTimeEl = document.getElementById("durTime");
 const lyricsStatus = document.getElementById("lyricsStatus");
 const lyricsContent = document.getElementById("lyricsContent");
 const lyricsViewport = document.getElementById("lyricsViewport");
-const coverWrap = document.querySelector(".cover-wrap");
 const equalizer = document.getElementById("equalizer");
 const eqBars = equalizer ? equalizer.querySelectorAll("span") : [];
+const videoToggleBtn = document.getElementById("videoToggleBtn");
+const videoHideBtn = document.getElementById("videoHideBtn");
+const videoStage = document.getElementById("videoStage");
+const videoFrame = document.getElementById("videoFrame");
+const ytPlayerHost = document.getElementById("ytPlayerHost");
+const playerShell = document.getElementById("playerShell");
 
 function formatTime(sec) {
   if (!isFinite(sec) || sec < 0) sec = 0;
@@ -44,32 +51,10 @@ function formatTime(sec) {
 if (window.gsap) {
   const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
   tl.to(".back-link", { opacity: 1, duration: 0.4 })
-    .fromTo(".cover-wrap", { opacity: 0, y: 16, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.55 }, "-=0.2")
-    .fromTo(".track-info", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4 }, "-=0.3")
-    .fromTo(".progress-area", { opacity: 0 }, { opacity: 1, duration: 0.35 }, "-=0.2")
+    .fromTo(".now-row", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.2")
+    .fromTo(".status-row", { opacity: 0 }, { opacity: 1, duration: 0.35 }, "-=0.25")
     .fromTo(".controls", { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35 }, "-=0.2")
     .fromTo(".lyrics-box", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
-
-  // Kapak sürükle/döndür — sadece küçük, geri yaylanan bir etkileşim
-  if (window.Draggable) {
-    Draggable.create(coverWrap, {
-      type: "rotation",
-      inertia: false,
-      onDragEnd: function () {
-        gsap.to(coverWrap, { rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.4)" });
-      },
-    });
-  }
-
-  // Play butonuna basınca hafif "tık" tepkisi
-  if (window.Observer) {
-    Observer.create({
-      target: playBtn,
-      type: "pointer",
-      onPress: () => gsap.to(playBtn, { scale: 0.9, duration: 0.12, ease: "power1.out" }),
-      onRelease: () => gsap.to(playBtn, { scale: 1, duration: 0.3, ease: "back.out(2)" }),
-    });
-  }
 }
 
 // ---- Equalizer animasyonu ----
@@ -77,11 +62,10 @@ let eqTweens = [];
 function startEqualizer() {
   if (!window.gsap || !eqBars.length) return;
   stopEqualizer();
-  gsap.to(equalizer, { opacity: 1, duration: 0.25 });
   eqBars.forEach((bar, i) => {
     const tw = gsap.to(bar, {
-      height: () => 6 + Math.random() * 14,
-      duration: 0.35 + Math.random() * 0.25,
+      height: () => 4 + Math.random() * 12,
+      duration: 0.3 + Math.random() * 0.25,
       repeat: -1,
       yoyo: true,
       ease: "sine.inOut",
@@ -95,7 +79,6 @@ function stopEqualizer() {
   eqTweens.forEach(t => t.kill());
   eqTweens = [];
   if (window.gsap) {
-    gsap.to(equalizer, { opacity: 0, duration: 0.25 });
     eqBars.forEach(bar => gsap.to(bar, { height: 4, duration: 0.2 }));
   }
 }
@@ -172,7 +155,9 @@ function startProgressLoop() {
     const t = ytPlayer.getCurrentTime();
     curTimeEl.textContent = formatTime(t);
     if (duration > 0) {
-      seekBar.value = (t / duration) * 100;
+      const pct = (t / duration) * 100;
+      seekBar.value = pct;
+      seekBar.style.setProperty("--fill", pct + "%");
     }
     updateActiveLyric(t);
   }, 250);
@@ -223,6 +208,7 @@ shuffleBtn.addEventListener("click", () => {
 seekBar.addEventListener("input", () => {
   if (!duration) return;
   seeking = true;
+  seekBar.style.setProperty("--fill", seekBar.value + "%");
   const t = (seekBar.value / 100) * duration;
   curTimeEl.textContent = formatTime(t);
 });
@@ -233,6 +219,27 @@ seekBar.addEventListener("change", () => {
   ytPlayer.seekTo(t, true);
   seeking = false;
 });
+
+// ---- Video göster / gizle (gerçek YouTube videosu, letterbox) ----
+function enterVideoMode() {
+  videoModeOn = true;
+  videoFrame.appendChild(ytPlayerHost);
+  ytPlayerHost.classList.add("video-mode");
+  videoStage.classList.remove("hidden");
+  if (window.gsap) {
+    gsap.fromTo(videoStage, { opacity: 0 }, { opacity: 1, duration: 0.25 });
+  }
+}
+
+function exitVideoMode() {
+  videoModeOn = false;
+  document.body.appendChild(ytPlayerHost);
+  ytPlayerHost.classList.remove("video-mode");
+  videoStage.classList.add("hidden");
+}
+
+videoToggleBtn.addEventListener("click", enterVideoMode);
+videoHideBtn.addEventListener("click", exitVideoMode);
 
 // ---- Lyrics: lrclib.net ----
 function cleanTitleForSearch(title) {
