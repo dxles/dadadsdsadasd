@@ -8,26 +8,43 @@
 </head>
 <body>
 
-<a href="index.html" class="back-link">← Listeye dön</a>
+<div class="bg-blur" id="bgBlur"></div>
+<div class="bg-overlay"></div>
 
-<div class="player-page">
+<a href="index.html" class="back-link" id="backLink">← Listeye dön</a>
 
-  <div class="cover-wrap">
-    <img id="coverImg" class="cover" alt="">
-    <div class="equalizer" id="equalizer" aria-hidden="true">
-      <span></span><span></span><span></span><span></span><span></span>
+<div class="player-shell" id="playerShell">
+
+  <div class="now-row">
+    <div class="cover-wrap">
+      <img id="coverImg" class="cover" alt="">
+    </div>
+
+    <div class="track-meta">
+      <h1 id="trackTitle">—</h1>
+      <p id="trackChannel">—</p>
+
+      <div class="progress-area">
+        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
+      </div>
+      <div class="time-row">
+        <span id="curTime" class="time">0:00</span>
+        <span id="durTime" class="time">0:00</span>
+      </div>
     </div>
   </div>
 
-  <div class="track-info">
-    <h1 id="trackTitle">—</h1>
-    <p id="trackChannel">—</p>
-  </div>
+  <div class="status-row">
+    <div class="equalizer" id="equalizer" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
 
-  <div class="progress-area">
-    <span id="curTime" class="time">0:00</span>
-    <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1">
-    <span id="durTime" class="time">0:00</span>
+    <div class="volume-box">
+      <button id="muteBtn" class="pill-btn icon-btn" title="Sesi kapat/aç">🔊</button>
+      <input type="range" id="volumeSlider" min="0" max="100" value="100" step="1" title="Ses seviyesi">
+    </div>
+
+    <button id="videoToggleBtn" class="pill-btn">Videoyu Göster</button>
   </div>
 
   <div class="controls">
@@ -47,11 +64,29 @@
 
 </div>
 
-<div id="ytPlayerHost" style="position:absolute; width:1px; height:1px; overflow:hidden; opacity:0;"></div>
+<div class="video-stage hidden" id="videoStage">
+  <div class="video-frame" id="videoFrame"></div>
+  <button id="videoHideBtn" class="pill-btn">Videoyu Gizle</button>
+</div>
+
+<!-- Sağ alt köşe mini oynatıcı: "Listeye dön"e basınca sayfa değişmeden önce belirir,
+     müzik kesilmeden devam eder; buradan durdurabilir/kapatabilirsin. -->
+<div class="mini-player hidden" id="miniPlayer">
+  <img id="miniCover" class="mini-cover" alt="">
+  <div class="mini-info">
+    <p id="miniTitle" class="mini-title">—</p>
+    <p id="miniChannel" class="mini-channel">—</p>
+  </div>
+  <div class="mini-eq" id="miniEq" aria-hidden="true">
+    <span></span><span></span><span></span>
+  </div>
+  <button id="miniPlayBtn" class="mini-btn" title="Oynat / Duraklat">❚❚</button>
+  <button id="miniCloseBtn" class="mini-btn mini-close" title="Kapat">✕</button>
+</div>
+
+<div id="ytPlayerHost"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Draggable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Observer.min.js"></script>
 <script src="youtube-player.js"></script>
 <script src="player.js"></script>
 </body>

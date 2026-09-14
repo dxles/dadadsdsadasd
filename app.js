@@ -55,6 +55,9 @@ const closeModalBtn = document.getElementById("closeModalBtn");
 const addSearchInput = document.getElementById("addSearchInput");
 const addSearchBtn = document.getElementById("addSearchBtn");
 const addResults = document.getElementById("addResults");
+const apiHelpBtn = document.getElementById("apiHelpBtn");
+const apiHelpModal = document.getElementById("apiHelpModal");
+const closeApiHelpBtn = document.getElementById("closeApiHelpBtn");
 
 // ---- Başlangıç ----
 function init() {
@@ -112,6 +115,33 @@ function init() {
   addModal.addEventListener("click", e => { if (e.target === addModal) closeAddModal(); });
   addSearchBtn.addEventListener("click", doAddSearch);
   addSearchInput.addEventListener("keydown", e => { if (e.key === "Enter") doAddSearch(); });
+
+  // ---- API anahtarı nasıl alınır yardım modalı ----
+  function openApiHelp() {
+    apiHelpModal.classList.remove("hidden");
+    if (window.gsap) {
+      gsap.fromTo(apiHelpModal, { opacity: 0 }, { opacity: 1, duration: 0.2 });
+      gsap.fromTo(apiHelpModal.querySelector(".modal-box"), { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" });
+    }
+  }
+
+  function closeApiHelp() {
+    if (window.gsap) {
+      gsap.to(apiHelpModal.querySelector(".modal-box"), { opacity: 0, y: 8, scale: 0.97, duration: 0.2, ease: "power1.in" });
+      gsap.to(apiHelpModal, { opacity: 0, duration: 0.2, onComplete: () => apiHelpModal.classList.add("hidden") });
+    } else {
+      apiHelpModal.classList.add("hidden");
+    }
+  }
+
+  apiHelpBtn.addEventListener("click", openApiHelp);
+  closeApiHelpBtn.addEventListener("click", closeApiHelp);
+  apiHelpModal.addEventListener("click", e => { if (e.target === apiHelpModal) closeApiHelp(); });
+
+  // İlk ziyarette anahtar yoksa yardım modalını otomatik göster
+  if (!getApiKey()) {
+    openApiHelp();
+  }
 }
 
 function setStatus(msg) {

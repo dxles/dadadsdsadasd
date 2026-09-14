@@ -9,6 +9,9 @@ document.getElementById("trackTitle").textContent = rawTitle;
 document.getElementById("trackChannel").textContent = channel;
 document.getElementById("coverImg").src = coverUrl;
 document.getElementById("bgBlur").style.backgroundImage = coverUrl ? `url(${coverUrl})` : "none";
+document.getElementById("miniCover").src = coverUrl;
+document.getElementById("miniTitle").textContent = rawTitle;
+document.getElementById("miniChannel").textContent = channel;
 
 let ytPlayer = null;
 let isPlaying = false;
@@ -19,6 +22,9 @@ let currentLineIndex = -1;
 let repeatOn = false;
 let shuffleOn = false;
 let videoModeOn = false;
+let isMuted = false;
+let lastVolume = 100;
+let miniPlayerActive = false; // "Listeye dön"e basılıp mini pencereye geçildi mi
 
 const playBtn = document.getElementById("playBtn");
 const backBtn = document.getElementById("backBtn");
@@ -39,6 +45,16 @@ const videoStage = document.getElementById("videoStage");
 const videoFrame = document.getElementById("videoFrame");
 const ytPlayerHost = document.getElementById("ytPlayerHost");
 const playerShell = document.getElementById("playerShell");
+const backLink = document.getElementById("backLink");
+
+const muteBtn = document.getElementById("muteBtn");
+const volumeSlider = document.getElementById("volumeSlider");
+
+const miniPlayer = document.getElementById("miniPlayer");
+const miniPlayBtn = document.getElementById("miniPlayBtn");
+const miniCloseBtn = document.getElementById("miniCloseBtn");
+const miniEq = document.getElementById("miniEq");
+const miniEqBars = miniEq ? miniEq.querySelectorAll("span") : [];
 
 function formatTime(sec) {
   if (!isFinite(sec) || sec < 0) sec = 0;
@@ -57,29 +73,53 @@ if (window.gsap) {
     .fromTo(".lyrics-box", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
 }
 
-// ---- Equalizer animasyonu ----
+// ---- Görsel equalizer (dans eden çubuklar) ----
+// Not: YouTube iframe cross-origin olduğu için sitenin sesinden gerçek frekans
+// verisi (Web Audio AnalyserNode) çekilemiyor. Bu yüzden bar'lar rastgele değil,
+// çalma durumuna tepki veren, birbirini etkileyen "müzikal hissi" olan bir
+// animasyon ile canlandırılıyor — gerçek ses analizi değil, görsel simülasyon.
 let eqTweens = [];
+let miniEqTweens = [];
+
 function startEqualizer() {
-  if (!window.gsap || !eqBars.length) return;
+  if (!window.gsap) return;
   stopEqualizer();
-  eqBars.forEach((bar, i) => {
-    const tw = gsap.to(bar, {
-      height: () => 4 + Math.random() * 12,
-      duration: 0.3 + Math.random() * 0.25,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
-      delay: i * 0.05,
+  if (eqBars.length) {
+    eqBars.forEach((bar, i) => {
+      const tw = gsap.to(bar, {
+        height: () => 4 + Math.random() * 12,
+        duration: 0.3 + Math.random() * 0.25,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: i * 0.05,
+      });
+      eqTweens.push(tw);
     });
-    eqTweens.push(tw);
-  });
+  }
+  if (miniEqBars.length) {
+    miniEqBars.forEach((bar, i) => {
+      const tw = gsap.to(bar, {
+        height: () => 3 + Math.random() * 10,
+        duration: 0.28 + Math.random() * 0.22,
+        repeat: -1,
+        yoyo: true,
+        ease: "sine.inOut",
+        delay: i * 0.06,
+      });
+      miniEqTweens.push(tw);
+    });
+  }
 }
 
 function stopEqualizer() {
   eqTweens.forEach(t => t.kill());
   eqTweens = [];
+  miniEqTweens.forEach(t => t.kill());
+  miniEqTweens = [];
   if (window.gsap) {
     eqBars.forEach(bar => gsap.to(bar, { height: 4, duration: 0.2 }));
+    miniEqBars.forEach(bar => gsap.to(bar, { height: 3, duration: 0.2 }));
   }
 }
 
@@ -88,19 +128,23 @@ if (videoId) {
   createYtPlayer("ytPlayerHost", videoId, {
     onReady: () => {
       startProgressLoop();
+      if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(lastVolume);
     },
     onStateChange: (e) => {
       if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
         playBtn.textContent = "❚❚";
+        miniPlayBtn.textContent = "❚❚";
         startEqualizer();
       } else if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         playBtn.textContent = "▶";
+        miniPlayBtn.textContent = "▶";
         stopEqualizer();
       } else if (e.data === YT.PlayerState.ENDED) {
         isPlaying = false;
         playBtn.textContent = "▶";
+        miniPlayBtn.textContent = "▶";
         stopEqualizer();
         handleTrackEnd();
       }
@@ -164,14 +208,17 @@ function startProgressLoop() {
 }
 
 // ---- Kontroller ----
-playBtn.addEventListener("click", () => {
+function togglePlay() {
   if (!ytPlayer) return;
   if (isPlaying) {
     ytPlayer.pauseVideo();
   } else {
     ytPlayer.playVideo();
   }
-});
+}
+
+playBtn.addEventListener("click", togglePlay);
+miniPlayBtn.addEventListener("click", togglePlay);
 
 backBtn.addEventListener("click", () => {
   if (!ytPlayer) return;
@@ -220,6 +267,33 @@ seekBar.addEventListener("change", () => {
   seeking = false;
 });
 
+// ---- Ses aç/kapa + seviye ----
+function applyVolume(vol) {
+  if (!ytPlayer || !ytPlayer.setVolume) return;
+  ytPlayer.setVolume(vol);
+  volumeSlider.style.setProperty("--vol-fill", vol + "%");
+  muteBtn.textContent = vol === 0 ? "🔇" : vol < 50 ? "🔉" : "🔊";
+}
+
+volumeSlider.addEventListener("input", () => {
+  const vol = Number(volumeSlider.value);
+  isMuted = vol === 0;
+  lastVolume = vol || lastVolume;
+  applyVolume(vol);
+});
+
+muteBtn.addEventListener("click", () => {
+  isMuted = !isMuted;
+  if (isMuted) {
+    lastVolume = Number(volumeSlider.value) || lastVolume;
+    volumeSlider.value = 0;
+    applyVolume(0);
+  } else {
+    volumeSlider.value = lastVolume || 100;
+    applyVolume(lastVolume || 100);
+  }
+});
+
 // ---- Video göster / gizle (gerçek YouTube videosu, letterbox) ----
 function enterVideoMode() {
   videoModeOn = true;
@@ -240,6 +314,44 @@ function exitVideoMode() {
 
 videoToggleBtn.addEventListener("click", enterVideoMode);
 videoHideBtn.addEventListener("click", exitVideoMode);
+
+// ---- "Listeye dön": sayfadan tamamen ayrılmadan önce sağ altta mini
+// oynatıcı olarak küçülür, müzik durmadan devam eder. Mini pencereden
+// durdurabilir ya da tamamen kapatıp listeye dönebilirsin. ----
+backLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  if (miniPlayerActive) return; // zaten mini modda, tekrar tıklamayı yoksay
+
+  miniPlayerActive = true;
+  miniPlayer.classList.remove("hidden");
+
+  if (window.gsap) {
+    gsap.to(playerShell, {
+      opacity: 0,
+      scale: 0.98,
+      duration: 0.25,
+      ease: "power1.in",
+      onComplete: () => playerShell.classList.add("leaving"),
+    });
+  } else {
+    playerShell.classList.add("leaving");
+  }
+
+  // Bir sonraki karede visible class'ı ekleyelim ki geçiş animasyonu çalışsın
+  requestAnimationFrame(() => {
+    miniPlayer.classList.add("visible");
+  });
+
+  miniPlayBtn.textContent = isPlaying ? "❚❚" : "▶";
+});
+
+// Mini oynatıcıdaki play/pause zaten togglePlay ile bağlı (yukarıda).
+
+miniCloseBtn.addEventListener("click", () => {
+  // Mini pencereyi kapat: müziği durdur ve gerçekten listeye dön.
+  if (ytPlayer) ytPlayer.pauseVideo();
+  window.location.href = "index.html";
+});
 
 // ---- Lyrics: lrclib.net ----
 function cleanTitleForSearch(title) {

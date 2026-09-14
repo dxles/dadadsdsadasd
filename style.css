@@ -161,10 +161,39 @@ a:hover {
     gap: 6px;
 }
 
+.api-key-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .api-key-box label {
     font-size: 12px;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+.api-help-btn {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--text-secondary);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.api-help-btn:hover {
+    border-color: var(--spotify-green);
+    color: var(--spotify-green);
 }
 
 .api-key-box input {
@@ -443,6 +472,53 @@ a:hover {
 
 .close-modal-btn:hover {
     color: var(--text-primary) !important;
+}
+
+/* API yardım modalı */
+.api-help-box {
+    width: 560px;
+}
+
+.api-steps {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    max-height: 50vh;
+}
+
+.api-steps li strong {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.api-steps li p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.api-steps li p code {
+    background: var(--dark-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12px;
+}
+
+.api-help-note {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--dark-bg);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    line-height: 1.5;
+}
+
+.api-help-note strong {
+    color: var(--text-primary);
 }
 
 @media (max-width: 780px) {
