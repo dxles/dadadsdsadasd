@@ -38,6 +38,7 @@ function initPlayerPage() {
   const queueCloseBtn = document.getElementById("queueCloseBtn");
   const queuePanel = document.getElementById("queuePanel");
   const queueListEl = document.getElementById("queueList");
+  const hudToggleBtn = document.getElementById("hudToggleBtn");
 
   // Bilgileri ve arka planı anında set et
   if (trackTitleEl) trackTitleEl.textContent = rawTitle;
@@ -459,10 +460,54 @@ applyCoverImages();
     });
   }
 
+  // ---- HUD (kontrolleri) gizle/göster — tam ekran video modunda ----
+  let hudHideTimer = null;
+
+  function setHudHidden(hidden) {
+    document.body.classList.toggle("hud-hidden", hidden);
+    if (hudToggleBtn) {
+      const label = hudToggleBtn.querySelector("span");
+      if (label) label.textContent = hidden ? "Kontrolleri Göster" : "Kontrolleri Gizle";
+    }
+  }
+
+  function scheduleHudAutoHide() {
+    if (hudHideTimer) clearTimeout(hudHideTimer);
+    if (!document.body.classList.contains("video-active")) return;
+    hudHideTimer = setTimeout(() => setHudHidden(true), 3500);
+  }
+
+  function wakeHud() {
+    if (!document.body.classList.contains("video-active")) return;
+    setHudHidden(false);
+    scheduleHudAutoHide();
+  }
+
+  // Fare/parmak hareketinde kontrolleri geri getir, sonra tekrar gizle.
+  document.addEventListener("mousemove", wakeHud);
+  document.addEventListener("touchstart", wakeHud, { passive: true });
+
+  if (hudToggleBtn) {
+    hudToggleBtn.addEventListener("click", () => {
+      const nowHidden = !document.body.classList.contains("hud-hidden");
+      setHudHidden(nowHidden);
+      if (!nowHidden) scheduleHudAutoHide();
+      else if (hudHideTimer) clearTimeout(hudHideTimer);
+    });
+  }
+
   if (videoToggleBtn && videoFrame && ytPlayerHost) {
     videoToggleBtn.addEventListener("click", () => {
       videoFrame.appendChild(ytPlayerHost);
       document.body.classList.add("video-active");
+      setHudHidden(false);
+      scheduleHudAutoHide();
+      // YouTube kaliteyi oynatıcı boyutuna göre otomatik seçiyor; tam
+      // ekrana geçince mümkün olan en yüksek çözünürlüğü (genelde 1080p
+      // ve üzeri) seçmesi için tekrar deniyoruz.
+      if (ytPlayer && typeof ytPlayer.setPlaybackQuality === "function") {
+        ytPlayer.setPlaybackQuality("hd1080");
+      }
     });
   }
 
@@ -470,6 +515,8 @@ applyCoverImages();
     videoHideBtn.addEventListener("click", () => {
       document.body.appendChild(ytPlayerHost);
       document.body.classList.remove("video-active");
+      setHudHidden(false);
+      if (hudHideTimer) clearTimeout(hudHideTimer);
     });
   }
 
@@ -483,7 +530,15 @@ applyCoverImages();
 
   // ---- Sözler (Lrclib API) ----
   function cleanTitleForSearch(title) {
-    return title.replace(/\(.*?\)/g, "").replace(/\[.*?\]/g, "").replace(/official.*/gi, "").trim();
+    return title
+      .replace(/\(.*?\)/g, "")
+      .replace(/\[.*?\]/g, "")
+      .replace(/official\s*(video|audio|music\s*video|lyric\s*video)?/gi, "")
+      .replace(/lyrics?\s*video/gi, "")
+      .replace(/\b(4k|hd|hq)\b/gi, "")
+      .replace(/[|]/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
   }
 
   function parseLRC(lrcText) {
@@ -529,20 +584,83 @@ applyCoverImages();
     }
   }
 
-  async function fetchLyrics() {
-    const track = cleanTitleForSearch(rawTitle);
-    if (!track) return;
-    if (lyricsStatus) lyricsStatus.textContent = "Sözler yükleniyor...";
+  // "Sanatçı - Şarkı Adı" formatındaki başlığı ayırır. Sadece track_name
+  // ile arama yapmak eşleşmeyi büyük ölçüde bozuyordu; artist_name'i de
+  // ayrı gönderdiğimizde lrclib çok daha isabetli sonuç veriyor.
+  function splitArtistTrack(title, fallbackArtist) {
+    const cleaned = cleanTitleForSearch(title);
+    const parts = cleaned.split(/\s+[-–—]\s+/);
+    if (parts.length >= 2) {
+      return { artist: parts[0].trim(), track: parts.slice(1).join(" - ").trim() };
+    }
+    return { artist: (fallbackArtist || "").trim(), track: cleaned.trim() };
+  }
+
+  async function lrclibSearch(params) {
     try {
-      const res = await fetch(`https://lrclib.net/api/search?track_name=${encodeURIComponent(track)}`);
-      const results = await res.json();
-      if (!results || !results.length) {
-        if (lyricsStatus) lyricsStatus.textContent = "Şarkı sözü bulunamadı.";
+      const qs = new URLSearchParams(params).toString();
+      const res = await fetch(`https://lrclib.net/api/search?${qs}`);
+      if (!res.ok) return [];
+      const data = await res.json().catch(() => []);
+      return Array.isArray(data) ? data : [];
+    } catch {
+      // Ağ/CORS hatası - sessizce boş dön, üst fonksiyon diğer denemelere geçsin.
+      return [];
+    }
+  }
+
+  async function fetchLyrics() {
+    const { artist, track } = splitArtistTrack(rawTitle, channel);
+    const fallbackArtist = (channel || "").trim();
+
+    if (lyricsStatus) lyricsStatus.textContent = "Sözler yükleniyor...";
+
+    try {
+      let results = [];
+
+      // 1. Deneme: ayrılan sanatçı + şarkı adı (en isabetli eşleşme)
+      if (track && artist) {
+        results = await lrclibSearch({ track_name: track, artist_name: artist });
+      }
+
+      // 2. Deneme: ayrılamadıysa ya da sonuç boşsa, kanal adını sanatçı olarak dene
+      if (!results.length && track && fallbackArtist && fallbackArtist !== artist) {
+        results = await lrclibSearch({ track_name: track, artist_name: fallbackArtist });
+      }
+
+      // 3. Deneme: sadece şarkı adı (sanatçısız)
+      if (!results.length && track) {
+        results = await lrclibSearch({ track_name: track });
+      }
+
+      // 4. Deneme: genel serbest metin araması (q) - temizlenmiş başlıkla
+      if (!results.length) {
+        results = await lrclibSearch({ q: track || cleanTitleForSearch(rawTitle) });
+      }
+
+      // 5. Deneme: q araması - ham (temizlenmemiş) başlıkla, en son çare
+      if (!results.length) {
+        results = await lrclibSearch({ q: rawTitle });
+      }
+
+      if (!results.length) {
+        if (lyricsStatus) lyricsStatus.textContent = "Bu şarkı için söz bulunamadı.";
         return;
       }
-      const best = results.find(r => r.syncedLyrics) || results[0];
+
+      const best = results.find(r => r.syncedLyrics) || results.find(r => r.plainLyrics) || results[0];
+
       if (best.syncedLyrics) {
         syncedLyrics = parseLRC(best.syncedLyrics);
+        if (!syncedLyrics.length) {
+          if (best.plainLyrics) {
+            if (lyricsStatus) lyricsStatus.textContent = "";
+            lyricsContent.innerHTML = `<div class="lyric-plain">${escapeHtmlLocal(best.plainLyrics)}</div>`;
+          } else if (lyricsStatus) {
+            lyricsStatus.textContent = "Söz bulunamadı.";
+          }
+          return;
+        }
         if (lyricsStatus) lyricsStatus.textContent = "";
         lyricsContent.innerHTML = "";
         syncedLyrics.forEach((line, i) => {
