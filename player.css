@@ -402,10 +402,50 @@ html, body {
 #videoHideBtn { display: none; }
 .video-active #videoHideBtn { display: flex; }
 
+#hudToggleBtn { display: none; }
+.video-active #hudToggleBtn { display: flex; }
+
 .queue-toggle-btn {
   left: auto;
   right: 30px;
 }
+
+/* HUD (kontroller) gizle/göster butonu: sağ üstte, video modunda görünür.
+   HUD gizlense bile bu buton görünür kalır, kullanıcı kontrolleri geri
+   getirebilsin. */
+.hud-toggle-btn {
+  left: auto;
+  right: 30px;
+  bottom: auto;
+  top: 24px;
+}
+
+/* ---- HUD gizleme: video tam ekran modundayken kontrolleri gizle ---- */
+body.video-active.hud-hidden .controls,
+body.video-active.hud-hidden #videoHideBtn,
+body.video-active.hud-hidden #queueToggleBtn,
+body.video-active.hud-hidden .back-link {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.35s ease;
+}
+
+body.video-active .controls,
+body.video-active #videoHideBtn,
+body.video-active #queueToggleBtn,
+body.video-active .back-link {
+  transition: opacity 0.35s ease;
+}
+
+@media (max-width: 640px) {
+  .hud-toggle-btn span { display: none; }
+  .hud-toggle-btn { padding: 10px; }
+}
+
+/* Video kutusu için sarmalayıcı. #ytPlayerHost, video moduna geçildiğinde
+   position:fixed ile tüm ekranı kapladığı için bu div'in kendisine ayrıca
+   stil vermeye gerek yok; sadece bir taşıyıcı görevi görür. */
+.video-frame-wrap { position: static; }
 
 /* ---- YouTube Player ve Video Modu ---- */
 #ytPlayerHost {
@@ -419,18 +459,19 @@ html, body {
 
 body.video-active #ytPlayerHost {
   position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: 90vw !important;
-  max-width: 900px !important;
-  aspect-ratio: 16 / 9 !important;
-  height: auto !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  aspect-ratio: unset !important;
   z-index: 15 !important;
   opacity: 1 !important;
   pointer-events: auto !important;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
-  border-radius: 12px;
+  box-shadow: none;
+  border-radius: 0;
+  background: #000;
   display: block !important;
   overflow: hidden;
 }
