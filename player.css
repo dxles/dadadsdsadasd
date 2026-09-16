@@ -40,6 +40,7 @@ input { font-family: inherit; }
     inset: 0;
     background: radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%);
     z-index: 2;
+    pointer-events: none;
 }
 
 /* ================= Geri dön ================= */
@@ -284,38 +285,41 @@ input { font-family: inherit; }
 }
 
 /* ================= Arka plan videosu =================
-   Video her zaman burada oynar; tam ekranı kaplar, bulanıklaştırılır ve
-   kapak resminin (bg-blur) üstüne, karartma katmanının (bg-overlay)
-   altına yerleşir. pointer-events: none sayesinde üzerine hiçbir
-   tıklama/dokunma ulaşmaz — bu yüzden video kazara durdurulamaz,
-   oynatılamaz ya da ileri/geri alınamaz; tüm kontrol yalnızca alttaki
-   kontrol barından yapılır. Video henüz ilk karesini çizmeden önce
-   opacity 0'da kalır, böylece altındaki statik kapak (bg-blur) görünür
-   kalır; oynatma başlar başlamaz (bkz. player.js, video-ready sınıfı)
-   yumuşak bir geçişle üstüne biner. */
+   Video artık ayrı bir "video modu"na geçmeden, her zaman burada
+   arka planda oynar: tam ekranı kaplar ve bulanıklaştırılır, tıpkı
+   eskiden statik kapak resminin bulanık hâlinin durduğu yerde.
+   pointer-events: none olduğu için iframe'e hiçbir tıklama/dokunma/
+   tekerlek olayı ulaşmaz — video kazara durdurulamaz, oynatılamaz,
+   ileri/geri alınamaz ya da tam ekrana geçemez. Üstündeki
+   .video-block-overlay (görünmez, pointer-events: auto) olayları
+   tamamen yutarak ekstra bir güvenlik katmanı sağlar. Tüm kontrol
+   sadece alttaki .controls barından yapılır. */
 #ytPlayerHost {
     position: fixed;
-    inset: -40px;
-    width: calc(100% + 80px);
-    height: calc(100% + 80px);
+    inset: -60px;
+    width: calc(100% + 120px);
+    height: calc(100% + 120px);
     overflow: hidden;
-    opacity: 0;
     pointer-events: none;
-    z-index: 1;
-    filter: blur(50px) brightness(0.55) saturate(1.3);
-    transform: scale(1.15);
-    transition: opacity 0.7s ease;
-    background: transparent;
-}
-
-#ytPlayerHost.video-ready {
-    opacity: 1;
+    z-index: 0;
+    filter: blur(48px) brightness(0.5) saturate(1.3);
+    transform: scale(1.1);
+    background: #000;
 }
 
 #ytPlayerHost iframe {
     width: 100%;
     height: 100%;
     pointer-events: none;
+    border: 0;
+}
+
+.video-block-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: transparent;
+    pointer-events: auto;
 }
 
 /* ================= Köşe butonları ================= */

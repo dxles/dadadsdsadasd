@@ -79,7 +79,6 @@ const lyricsContent = document.getElementById("lyricsContent");
 const lyricsContainerOuter = document.getElementById("lyricsContainerOuter");
 const backLink = document.getElementById("backLink");
 
-const ytPlayerHost = document.getElementById("ytPlayerHost");
 const queueToggleBtn = document.getElementById("queueToggleBtn");
 const queuePanel = document.getElementById("queuePanel");
 const queueList = document.getElementById("queueList");
@@ -130,7 +129,6 @@ function parseLRC(lrcText) {
 function applyTrackMeta(track) {
   const cover = `https://i.ytimg.com/vi/${track.id}/hqdefault.jpg`;
   coverImg.src = cover;
-  bgBlur.style.backgroundImage = `url('${cover}')`;
   trackTitle.textContent = track.title;
   trackChannel.textContent = track.channel || "";
   document.title = `${track.title} — Nowtify`;
@@ -200,9 +198,6 @@ function initPlayer() {
         setPlayIcon(true);
         startEqualizer();
         stage.classList.add("is-playing");
-        // Video ilk kez oynamaya başladığında bulanık arka plan videosunu
-        // göster (kapak resminden video görüntüsüne yumuşak geçiş yapar).
-        ytPlayerHost.classList.add("video-ready");
       } else if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         setPlayIcon(false);
