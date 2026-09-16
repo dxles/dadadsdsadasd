@@ -15,18 +15,53 @@ function formatTime(sec) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// Şarkı sözü aramaları için sanatçı/şarkı adını temizle
-function cleanForLyrics(str) {
+// Şarkı sözü aramaları için başlığı temizle (parantez, "official video" vb.)
+function stripNoise(str) {
   return (str || "")
     .replace(/\(.*?\)/g, "")
     .replace(/\[.*?\]/g, "")
     .replace(/official.*video/gi, "")
     .replace(/official.*audio/gi, "")
     .replace(/lyrics?/gi, "")
-    .replace(/\bft\.?\b.*/gi, "")
-    .replace(/\bfeat\.?\b.*/gi, "")
-    .replace(/[-–—]\s*$/g, "")
+    .replace(/\bhd\b|\b4k\b/gi, "")
+    .replace(/\s{2,}/g, " ")
     .trim();
+}
+
+// YouTube başlıkları genelde "Sanatçı - Şarkı Adı" kalıbındadır.
+// Bunu ayrıştırıp lyrics API'lerine doğru artist/title çiftini vermek
+// için birkaç arama adayı üretir (en olası olandan en genele doğru).
+function buildLyricsQueryCandidates(videoTitle, channelName) {
+  const cleanTitle = stripNoise(videoTitle);
+  const cleanChannel = stripNoise(channelName).replace(/\s*-\s*Topic$/i, "").trim();
+  const candidates = [];
+  const seen = new Set();
+
+  const addCandidate = (artist, title) => {
+    artist = (artist || "").trim();
+    title = (title || "").trim();
+    if (!artist || !title) return;
+    const key = `${artist.toLowerCase()}|${title.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    candidates.push({ artist, title });
+  };
+
+  // "Artist - Title" veya "Artist – Title" ayır (ilk tire noktasından böl)
+  const dashMatch = cleanTitle.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+  if (dashMatch) {
+    const [, left, right] = dashMatch;
+    // En olası: tiredeki sağ taraf = şarkı adı, sol taraf = sanatçı
+    addCandidate(left, right);
+    // Kanal adı daha güvenilir olabilir, sağ tarafı onunla da dene
+    addCandidate(cleanChannel, right);
+  }
+
+  // Tire yoksa veya yukarıdakiler tutmazsa: kanal = sanatçı, tüm temiz
+  // başlık = şarkı adı
+  addCandidate(cleanChannel, cleanTitle);
+
+  return candidates;
 }
 
 // ================= DOM =================
@@ -296,31 +331,83 @@ function closeQueuePanel() {
 }
 
 // ================= Şarkı Sözleri =================
-async function loadLyrics(track) {
-  const artist = cleanForLyrics(track.channel);
-  const title = cleanForLyrics(track.title);
+// Sıra: 1) lyrics.ovh   2) lrclib.net (bulamazsa)
+// TODO: YouTube altyazılarından (captions) üçüncü bir yedek eklemek
+// mümkün ama bunun için sunucu tarafı bir proxy gerekir — YouTube'un
+// timedtext uç noktası CORS'a kapalı ve üçüncü taraf kullanımına uygun
+// belgelenmiş bir API değil, o yüzden statik bu sitede yapılamıyor.
+async function fetchFromLyricsOvh(artist, title) {
+  const res = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.lyrics ? data.lyrics.trim() : null;
+}
 
-  if (!artist && !title) {
+async function fetchFromLrclib(artist, title) {
+  const url = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+
+  if (data.plainLyrics) return data.plainLyrics.trim();
+
+  // Sadece zamanlanmış (senkron) söz varsa, [00:12.34] gibi zaman
+  // damgalarını temizleyip düz metne çevir.
+  if (data.syncedLyrics) {
+    return data.syncedLyrics
+      .split("\n")
+      .map(line => line.replace(/^\[\d{2}:\d{2}(?:\.\d{1,2})?\]\s*/, ""))
+      .join("\n")
+      .trim();
+  }
+
+  return null;
+}
+
+function renderLyrics(text) {
+  lyricsStatus.classList.add("hidden");
+  lyricsContent.innerHTML = text
+    .split("\n")
+    .map(line => `<p>${escapeHtml(line) || "&nbsp;"}</p>`)
+    .join("");
+}
+
+async function loadLyrics(track) {
+  const candidates = buildLyricsQueryCandidates(track.title, track.channel);
+
+  if (!candidates.length) {
+    lyricsStatus.classList.remove("hidden");
     lyricsStatus.textContent = "Sözler bulunamadı.";
+    lyricsContent.innerHTML = "";
     return;
   }
 
-  try {
-    const res = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
-    if (!res.ok) throw new Error("no-lyrics");
-    const data = await res.json();
-    if (!data.lyrics) throw new Error("no-lyrics");
+  lyricsStatus.classList.remove("hidden");
+  lyricsStatus.textContent = "Sözler yükleniyor...";
+  lyricsContent.innerHTML = "";
 
-    lyricsStatus.classList.add("hidden");
-    lyricsContent.innerHTML = data.lyrics
-      .split("\n")
-      .map(line => `<p>${escapeHtml(line) || "&nbsp;"}</p>`)
-      .join("");
-  } catch {
-    lyricsStatus.classList.remove("hidden");
-    lyricsStatus.textContent = "Bu şarkı için söz bulunamadı.";
-    lyricsContent.innerHTML = "";
+  for (const { artist, title } of candidates) {
+    // 1) lyrics.ovh dene
+    try {
+      const lyrics = await fetchFromLyricsOvh(artist, title);
+      if (lyrics) { renderLyrics(lyrics); return; }
+    } catch {
+      /* sessiz geç */
+    }
+
+    // 2) lrclib.net dene
+    lyricsStatus.textContent = "Sözler aranıyor (lrclib)...";
+    try {
+      const lyrics = await fetchFromLrclib(artist, title);
+      if (lyrics) { renderLyrics(lyrics); return; }
+    } catch {
+      /* sessiz geç, bir sonraki adayı dene */
+    }
   }
+
+  lyricsStatus.classList.remove("hidden");
+  lyricsStatus.textContent = "Bu şarkı için söz bulunamadı.";
+  lyricsContent.innerHTML = "";
 }
 
 // ================= Video Modu =================
