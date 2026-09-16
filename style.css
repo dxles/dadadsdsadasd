@@ -136,6 +136,113 @@ a:hover {
     color: var(--spotify-green);
 }
 
+/* Çalma Listelerim (sidebar) */
+.playlist-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.playlist-nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.playlist-new-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--text-secondary);
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.playlist-new-btn:hover {
+    border-color: var(--spotify-green);
+    color: var(--spotify-green);
+}
+
+.playlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.playlist-btn {
+    flex: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.playlist-btn:hover {
+    background: var(--dark-hover);
+    color: var(--text-primary);
+}
+
+.playlist-btn.active {
+    background: var(--dark-hover);
+    color: var(--spotify-green);
+}
+
+.playlist-del-btn {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.playlist-item:hover .playlist-del-btn {
+    opacity: 1;
+}
+
+.playlist-del-btn:hover {
+    color: var(--danger);
+}
+
+.playlist-empty-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+}
+
 .add-song-btn {
     background: var(--spotify-green);
     color: #fff;
@@ -285,10 +392,85 @@ a:hover {
 }
 
 .song-card {
+    position: relative;
     background: var(--dark-card);
     border-radius: 15px;
     overflow: hidden;
     transition: transform 0.3s ease, background 0.3s ease;
+}
+
+/* Şarkı kartındaki "çalma listesine ekle" butonu ve menüsü */
+.card-add-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    z-index: 2;
+}
+
+.song-card:hover .card-add-btn,
+.card-add-btn.menu-open {
+    opacity: 1;
+}
+
+.card-add-btn:hover {
+    background: var(--spotify-green);
+}
+
+.card-add-menu {
+    position: absolute;
+    top: 40px;
+    right: 8px;
+    z-index: 3;
+    background: var(--dark-hover);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 160px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.card-add-menu button {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-add-menu button:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.card-add-menu button.new-playlist-opt {
+    color: var(--spotify-green);
+    font-weight: 600;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 2px;
+    padding-top: 8px;
 }
 
 .song-card:hover {
@@ -461,6 +643,57 @@ a:hover {
 
 .add-result-item button:hover {
     background: #1ed760;
+}
+
+/* Spotify içe aktarma satırı (şarkı ekle modalı içinde) */
+.spotify-import-row {
+    display: flex;
+    gap: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 4px;
+}
+
+.spotify-import-row input {
+    flex: 1;
+    min-width: 0;
+    background: var(--dark-bg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.spotify-import-row input:focus {
+    outline: none;
+    border-color: var(--spotify-green);
+}
+
+.spotify-import-row button {
+    background: #1DB954;
+    border: none;
+    border-radius: var(--radius);
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.spotify-import-row button:hover {
+    background: #1ed760;
+}
+
+.spotify-import-row button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.spotify-import-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-height: 16px;
 }
 
 .close-modal-btn {

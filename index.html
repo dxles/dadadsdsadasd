@@ -26,7 +26,25 @@
       <button class="genre-btn" data-genre="benim">Eklediklerim</button>
     </nav>
 
+    <div class="playlist-nav">
+      <div class="playlist-nav-head">
+        <span>Çalma Listelerim</span>
+        <button id="newPlaylistBtn" class="playlist-new-btn" title="Yeni çalma listesi">+</button>
+      </div>
+      <div class="playlist-list" id="playlistList"></div>
+    </div>
+
     <button class="add-song-btn" id="addSongBtn">+ Şarkı Ekle</button>
+
+    <div class="api-key-box" id="spotifyKeyBox">
+      <div class="api-key-label-row">
+        <label for="spotifyClientId">Spotify Client ID / Secret</label>
+      </div>
+      <input type="text" id="spotifyClientId" placeholder="Client ID">
+      <input type="password" id="spotifyClientSecret" placeholder="Client Secret">
+      <button id="saveSpotifyBtn">Kaydet</button>
+      <p class="api-hint">Spotify çalma listesi içe aktarmak için opsiyonel. developer.spotify.com/dashboard'dan ücretsiz alınır, sadece tarayıcında saklanır.</p>
+    </div>
 
     <div class="api-key-box">
       <div class="api-key-label-row">
@@ -59,6 +77,13 @@
     <input type="text" id="addSearchInput" placeholder="YouTube'da ara...">
     <button id="addSearchBtn">Ara</button>
     <div id="addResults" class="add-results"></div>
+
+    <div class="spotify-import-row">
+      <input type="text" id="spotifyImportInput" placeholder="Spotify çalma listesi linki (open.spotify.com/playlist/...)">
+      <button id="spotifyImportBtn">İçe Aktar</button>
+    </div>
+    <div id="spotifyImportStatus" class="spotify-import-status"></div>
+
     <button id="closeModalBtn" class="close-modal-btn">Kapat</button>
   </div>
 </div>
@@ -124,6 +149,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Flip.min.js"></script>
+<script src="common.js"></script>
 <script src="seed-songs.js"></script>
 <script src="youtube-player.js"></script>
 <script src="app.js"></script>

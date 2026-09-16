@@ -51,11 +51,9 @@
     <div id="lyricsContent"></div>
   </div>
 
-  <!-- YouTube Video Alanı (Başlangıçta gizli host) -->
+  <!-- YouTube Video Alanı (Başlangıçta gizli host; video moduna geçince
+       CSS ile (body.video-active #ytPlayerHost) tam ekrana fixed olur) -->
   <div id="ytPlayerHost"></div>
-
-  <!-- Video Modu Çerçevesi -->
-  <div class="video-frame-wrap" id="videoFrame"></div>
 
   <!-- Video Modu Açma / Kapatma Butonları -->
   <button id="videoToggleBtn" class="corner-btn">
@@ -65,12 +63,6 @@
   <button id="videoHideBtn" class="corner-btn">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     <span>Videoyu Kapat</span>
-  </button>
-
-  <!-- HUD (kontrolleri) gizle/göster Butonu: video tam ekran modunda sağ üstte belirir -->
-  <button id="hudToggleBtn" class="corner-btn hud-toggle-btn" title="Kontrolleri gizle/göster">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-    <span>Kontrolleri Gizle</span>
   </button>
 
   <!-- Çalma Sırası Butonu -->
@@ -128,6 +120,8 @@
     <input type="range" id="volumeSlider" min="0" max="100" value="100">
   </div>
 
+  <!-- Ortak depolama/yardımcı fonksiyonlar -->
+  <script src="common.js"></script>
   <!-- YouTube Player Yükleyici Scripti -->
   <script src="youtube-player.js"></script>
   <!-- Ana JavaScript Dosyamız -->
