@@ -320,10 +320,23 @@ body.video-active .equalizer-container {
 body.video-active #videoToggleBtn { display: none; }
 body.video-active #videoHideBtn { display: flex; }
 
-.queue-toggle-btn {
-    top: 68px;
+/* Video/Sıra butonları: equalizer'ın hemen altında, yan yana */
+.action-row {
+    position: fixed;
+    left: 60px;
+    bottom: 58px;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: opacity 0.4s ease, transform 0.3s ease;
 }
-body.video-active .queue-toggle-btn { top: 22px; right: 168px; z-index: 61; }
+
+.action-row .corner-btn {
+    position: static;
+    top: auto;
+    right: auto;
+}
 
 /* ================= Çalma sırası paneli ================= */
 .queue-panel {
@@ -558,36 +571,5 @@ body.hud-hidden .controls {
     .controls { gap: 4px; padding: 8px 10px; }
     #volumeSlider { width: 50px; }
     .queue-panel { width: 100%; }
-}
-
-/* SIRA BUTONLARI VE EQUALIZER DÜZENİ */
-.equalizer-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-.queue-buttons {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 15px;
-}
-
-/* LYRICS SMOOTH AKIŞ */
-#lyrics-container {
-    scroll-behavior: smooth;
-    overflow-y: auto;
-    height: 100%;
-    padding-bottom: 50%;
-}
-.lyric-line {
-    transition: all 0.4s ease-in-out;
-    opacity: 0.5;
-}
-.lyric-line.active {
-    opacity: 1;
-    transform: scale(1.05);
-    font-weight: bold;
-    color: #fff;
+    .action-row { left: 24px; bottom: 96px; }
 }
