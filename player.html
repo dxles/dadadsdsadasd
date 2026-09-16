@@ -55,21 +55,22 @@
        CSS ile (body.video-active #ytPlayerHost) tam ekrana fixed olur) -->
   <div id="ytPlayerHost"></div>
 
-  <!-- Video Modu Açma / Kapatma Butonları -->
-  <button id="videoToggleBtn" class="corner-btn">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="13" height="13" rx="2"/><path d="M20 8.5l-4.5 3 4.5 3v-6z"/></svg>
-    <span>Videoyu Göster</span>
-  </button>
-  <button id="videoHideBtn" class="corner-btn">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    <span>Videoyu Kapat</span>
-  </button>
-
-  <!-- Çalma Sırası Butonu -->
-  <button id="queueToggleBtn" class="corner-btn queue-toggle-btn" title="Çalma sırası">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
-    <span>Sıra</span>
-  </button>
+  <!-- Video Modu Aç/Kapa ve Çalma Sırası Butonları: equalizer'ın hemen
+       altında, yan yana. -->
+  <div class="action-row">
+    <button id="videoToggleBtn" class="corner-btn">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="13" height="13" rx="2"/><path d="M20 8.5l-4.5 3 4.5 3v-6z"/></svg>
+      <span>Videoyu Göster</span>
+    </button>
+    <button id="videoHideBtn" class="corner-btn">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <span>Videoyu Kapat</span>
+    </button>
+    <button id="queueToggleBtn" class="corner-btn" title="Çalma sırası">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
+      <span>Sıra</span>
+    </button>
+  </div>
 
   <!-- Çalma Sırası Paneli -->
   <div class="queue-panel" id="queuePanel">
