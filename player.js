@@ -66,7 +66,6 @@ function buildLyricsQueryCandidates(videoTitle, channelName) {
 
 // ================= DOM =================
 const stage = document.getElementById("stage");
-const bgBlur = document.getElementById("bgBlur");
 const coverImg = document.getElementById("coverImg");
 const trackTitle = document.getElementById("trackTitle");
 const trackChannel = document.getElementById("trackChannel");
@@ -77,10 +76,10 @@ const durTimeEl = document.getElementById("durTime");
 const equalizer = document.getElementById("equalizer");
 const lyricsStatus = document.getElementById("lyricsStatus");
 const lyricsContent = document.getElementById("lyricsContent");
+const lyricsContainerOuter = document.getElementById("lyricsContainerOuter");
 const backLink = document.getElementById("backLink");
 
-const videoToggleBtn = document.getElementById("videoToggleBtn");
-const videoHideBtn = document.getElementById("videoHideBtn");
+const ytPlayerHost = document.getElementById("ytPlayerHost");
 const queueToggleBtn = document.getElementById("queueToggleBtn");
 const queuePanel = document.getElementById("queuePanel");
 const queueList = document.getElementById("queueList");
@@ -201,6 +200,9 @@ function initPlayer() {
         setPlayIcon(true);
         startEqualizer();
         stage.classList.add("is-playing");
+        // Video ilk kez oynamaya başladığında bulanık arka plan videosunu
+        // göster (kapak resminden video görüntüsüne yumuşak geçiş yapar).
+        ytPlayerHost.classList.add("video-ready");
       } else if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         setPlayIcon(false);
@@ -255,7 +257,10 @@ function findQueueIndex() {
 }
 
 function goToTrack(song) {
-  if (progressInterval) clearInterval(progressInterval);
+  if (progressInterval) {
+    clearInterval(progressInterval);
+    progressInterval = null;
+  }
   current = { id: song.id, title: song.title, channel: song.channel || "" };
   const url = new URL(window.location.href);
   url.searchParams.set("v", current.id);
@@ -405,23 +410,26 @@ function renderSyncedLyrics(lines) {
   syncedLyrics = lines;
   lyricsCurrentIndex = -1;
   lyricsStatus.classList.add("hidden");
-  lyricsContent.innerHTML = lines
-    .map((l, i) => `<p data-index="${i}">${escapeHtml(l.text) || "&nbsp;"}</p>`)
-    .join("");
+  lyricsContainerOuter.classList.remove("lyrics-plain-mode");
+  lyricsContainerOuter.classList.add("lyrics-synced-mode");
+  lyricsContent.innerHTML = `<p class="lyrics-current-line" id="lyricsCurrentLine"></p>`;
 }
 
 function renderPlainLyrics(text) {
   syncedLyrics = null;
   lyricsCurrentIndex = -1;
   lyricsStatus.classList.add("hidden");
+  lyricsContainerOuter.classList.remove("lyrics-synced-mode");
+  lyricsContainerOuter.classList.add("lyrics-plain-mode");
   lyricsContent.innerHTML = text
     .split("\n")
     .map(line => `<p>${escapeHtml(line) || "&nbsp;"}</p>`)
     .join("");
 }
 
-// Şu anki oynatma zamanına göre aktif satırı işaretler ve akıcı biçimde
-// ortaya kaydırır. updateProgress() içinden çağrılır.
+// Şu anki oynatma zamanına göre aktif satırı bulur ve tek satırlık
+// gösterimi Spotify tarzı kayarak/solarak günceller. updateProgress()
+// içinden çağrılır.
 function updateActiveLyricLine(currentTime) {
   if (!syncedLyrics || !syncedLyrics.length) return;
   let idx = -1;
@@ -432,20 +440,30 @@ function updateActiveLyricLine(currentTime) {
   if (idx === lyricsCurrentIndex) return;
   lyricsCurrentIndex = idx;
 
-  const prevActive = lyricsContent.querySelector("p.active");
-  if (prevActive) prevActive.classList.remove("active");
+  const lineEl = document.getElementById("lyricsCurrentLine");
+  if (!lineEl) return;
+  const nextText = idx >= 0 ? (syncedLyrics[idx].text || "♪") : "";
 
-  if (idx < 0) return;
-  const activeEl = lyricsContent.querySelector(`p[data-index="${idx}"]`);
-  if (!activeEl) return;
-  activeEl.classList.add("active");
+  const applyText = () => { lineEl.textContent = nextText; };
 
-  const container = document.getElementById("lyricsContainerOuter");
-  if (container) {
-    container.scrollTo({
-      top: activeEl.offsetTop - (container.clientHeight / 2) + (activeEl.clientHeight / 2),
-      behavior: "smooth",
+  if (window.gsap) {
+    gsap.killTweensOf(lineEl);
+    gsap.to(lineEl, {
+      opacity: 0,
+      y: -16,
+      duration: 0.18,
+      ease: "power1.in",
+      onComplete: () => {
+        applyText();
+        gsap.fromTo(lineEl, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.32, ease: "power2.out" });
+      },
     });
+  } else {
+    lineEl.style.opacity = "0";
+    setTimeout(() => {
+      applyText();
+      lineEl.style.opacity = "1";
+    }, 120);
   }
 }
 
@@ -497,19 +515,9 @@ async function loadLyrics(track) {
   lyricsContent.innerHTML = "";
 }
 
-// ================= Video Modu =================
-function showVideo() {
-  document.body.classList.add("video-active");
-}
-function hideVideo() {
-  document.body.classList.remove("video-active");
-}
-
 // ================= HUD Otomatik Gizleme =================
-// "Videoyu Göster" butonuna tıklanmadan da, fare belirli bir süre
-// hareket etmezse kontrol arayüzü (HUD) otomatik gizlenir; herhangi bir
-// harekette veya dokunmada tekrar görünür. Bu davranış ayrı bir butona
-// bağlı değildir.
+// Fare belirli bir süre hareket etmezse kontrol arayüzü (HUD) otomatik
+// gizlenir; herhangi bir harekette veya dokunmada tekrar görünür.
 let hudTimeout = null;
 function showHud() {
   document.body.classList.remove("hud-hidden");
@@ -600,9 +608,6 @@ function init() {
   seekBar.addEventListener("change", commitSeek);
   seekBar.addEventListener("pointerup", commitSeek);
   seekBar.addEventListener("touchend", commitSeek);
-
-  videoToggleBtn.addEventListener("click", showVideo);
-  videoHideBtn.addEventListener("click", hideVideo);
 
   queueToggleBtn.addEventListener("click", () => {
     if (queuePanel.classList.contains("open")) closeQueuePanel();

@@ -30,7 +30,9 @@ function createYtPlayer(containerId, videoId, { onReady, onStateChange, onError 
           controls: 0,
           disablekb: 1,
           modestbranding: 1,
-          rel: 0,
+          rel: 0,             // İlgili videoları gizle
+          iv_load_policy: 3,  // Video içi ek açıklamaları (anotasyonları) kapat
+          fs: 0,              // Tam ekran butonunu gizle (isteğe bağlı temiz görünüm)
         },
         events: {
           onReady: (e) => {
@@ -41,8 +43,6 @@ function createYtPlayer(containerId, videoId, { onReady, onStateChange, onError 
             if (onStateChange) onStateChange(e);
           },
           onError: (e) => {
-            // 2 = gecersiz video ID, 5 = HTML5 oynatici hatasi,
-            // 100 = video bulunamadi/kaldirilmis, 101/150 = gomulmesine izin verilmiyor
             if (onError) onError(e);
           },
         },

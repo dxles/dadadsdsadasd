@@ -10,8 +10,8 @@
 </head>
 <body>
 
-  <!-- Arka Plan Blurlu Kapak -->
-  <div class="bg-blur" id="bgBlur"></div>
+  <!-- Arka plan artık bulanık kapak resmi değil, aşağıdaki #ytPlayerHost
+       (bulanık video). bg-overlay üstüne kararma bindirir. -->
   <div class="bg-overlay"></div>
 
   <!-- Geri Dönüş Butonu -->
@@ -27,6 +27,9 @@
         <div class="track-title" id="trackTitle">Şarkı Yükleniyor...</div>
         <div class="track-channel" id="trackChannel">Sanatçı</div>
         <div class="player-status" id="playerStatus"></div>
+        <div class="adblock-hint" id="adblockHint">
+          Reklamsız izlemek için tarayıcına <a href="https://ublockorigin.com/" target="_blank" rel="noopener">uBlock Origin</a> kurabilirsin (mobilde Firefox/Kiwi tarayıcısı + eklenti ile de çalışır). Bu, sitenin değil tarayıcının işi — biz bunu kod tarafında sağlayamıyoruz.
+        </div>
 
         <!-- İlerleme Çubuğu -->
         <div class="progress-area">
@@ -51,21 +54,15 @@
     <div id="lyricsContent"></div>
   </div>
 
-  <!-- YouTube Video Alanı (Başlangıçta gizli host; video moduna geçince
-       CSS ile (body.video-active #ytPlayerHost) tam ekrana fixed olur) -->
+  <!-- YouTube Video Alanı: video her zaman burada, arka planda, tüm
+       ekranı kaplayacak şekilde ve bulanık (blur) olarak oynar.
+       pointer-events: none olduğu için üzerine tıklanamaz — tıklama
+       videoyu durdurup/oynatıp kontrol edemez. -->
   <div id="ytPlayerHost"></div>
+  <div class="video-block-overlay" id="videoBlockOverlay"></div>
 
-  <!-- Video Modu Aç/Kapa ve Çalma Sırası Butonları: equalizer'ın hemen
-       altında, yan yana. -->
+  <!-- Çalma Sırası Butonu: equalizer'ın hemen altında. -->
   <div class="action-row">
-    <button id="videoToggleBtn" class="corner-btn">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="13" height="13" rx="2"/><path d="M20 8.5l-4.5 3 4.5 3v-6z"/></svg>
-      <span>Videoyu Göster</span>
-    </button>
-    <button id="videoHideBtn" class="corner-btn">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      <span>Videoyu Kapat</span>
-    </button>
     <button id="queueToggleBtn" class="corner-btn" title="Çalma sırası">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
       <span>Sıra</span>

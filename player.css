@@ -35,22 +35,11 @@ button { font-family: inherit; cursor: pointer; }
 input { font-family: inherit; }
 
 /* ================= Arka plan ================= */
-.bg-blur {
-    position: fixed;
-    inset: -40px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(50px) brightness(0.55) saturate(1.3);
-    transform: scale(1.15);
-    transition: background-image 0.6s ease;
-    z-index: 0;
-}
-
 .bg-overlay {
     position: fixed;
     inset: 0;
     background: radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%);
-    z-index: 1;
+    z-index: 2;
 }
 
 /* ================= Geri dön ================= */
@@ -143,6 +132,18 @@ input { font-family: inherit; }
     min-height: 16px;
 }
 
+.adblock-hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+    max-width: 420px;
+    line-height: 1.5;
+}
+
+.adblock-hint a {
+    color: var(--spotify-green);
+    text-decoration: underline;
+}
+
 /* İlerleme çubuğu */
 .progress-area {
     margin-top: 10px;
@@ -225,16 +226,14 @@ input { font-family: inherit; }
     right: 0;
     bottom: 0;
     z-index: 4;
-    width: 300px;
-    padding: 90px 34px 140px;
-    overflow-y: auto;
+    width: 380px;
+    max-width: 40vw;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
     text-align: right;
-    mask-image: linear-gradient(to bottom, transparent 0, black 90px, black calc(100% - 120px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 90px, black calc(100% - 120px), transparent 100%);
     transition: opacity 0.35s ease;
 }
-
-.lyrics-container::-webkit-scrollbar { width: 0; }
 
 .lyrics-status {
     font-size: 13px;
@@ -243,54 +242,79 @@ input { font-family: inherit; }
 
 .lyrics-status.hidden { display: none; }
 
-#lyricsContent p {
+#lyricsContent {
+    width: 100%;
+}
+
+/* Senkron mod (varsayılan/Spotify tarzı): tek satır, büyük, ortada,
+   satır değiştikçe JS içinde GSAP ile kayarak/solarak güncellenir. */
+.lyrics-current-line {
+    font-size: clamp(22px, 2.6vw, 36px);
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--text-primary);
+    min-height: 1.3em;
+    letter-spacing: -0.01em;
+    will-change: transform, opacity;
+}
+
+/* Düz (senkronsuz) sözler: zaman bilgisi olmadığı için tek satır
+   halinde gösterilemiyor, akan/kaydırılabilir küçük bir liste olarak
+   kalır. */
+.lyrics-container.lyrics-plain-mode {
+    padding: 90px 34px 140px;
+    overflow-y: auto;
+    mask-image: linear-gradient(to bottom, transparent 0, black 90px, black calc(100% - 120px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 90px, black calc(100% - 120px), transparent 100%);
+}
+
+.lyrics-container.lyrics-plain-mode::-webkit-scrollbar { width: 0; }
+
+.lyrics-container.lyrics-plain-mode #lyricsContent p {
     font-size: 15px;
     font-weight: 600;
     line-height: 1.9;
-    color: rgba(255,255,255,0.4);
-    transition: color 0.25s ease, transform 0.25s ease;
+    color: rgba(255,255,255,0.55);
 }
 
-#lyricsContent p.active {
-    color: var(--text-primary);
-    transform: scale(1.03);
-}
-
-#lyricsContent p:empty::before {
+.lyrics-container.lyrics-plain-mode #lyricsContent p:empty::before {
     content: "";
     display: block;
     height: 6px;
 }
 
-/* ================= Video modu ================= */
+/* ================= Arka plan videosu =================
+   Video her zaman burada oynar; tam ekranı kaplar, bulanıklaştırılır ve
+   kapak resminin (bg-blur) üstüne, karartma katmanının (bg-overlay)
+   altına yerleşir. pointer-events: none sayesinde üzerine hiçbir
+   tıklama/dokunma ulaşmaz — bu yüzden video kazara durdurulamaz,
+   oynatılamaz ya da ileri/geri alınamaz; tüm kontrol yalnızca alttaki
+   kontrol barından yapılır. Video henüz ilk karesini çizmeden önce
+   opacity 0'da kalır, böylece altındaki statik kapak (bg-blur) görünür
+   kalır; oynatma başlar başlamaz (bkz. player.js, video-ready sınıfı)
+   yumuşak bir geçişle üstüne biner. */
 #ytPlayerHost {
     position: fixed;
-    width: 1px;
-    height: 1px;
+    inset: -40px;
+    width: calc(100% + 80px);
+    height: calc(100% + 80px);
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
-    top: 0;
-    left: 0;
-    z-index: 3;
-    transition: opacity 0.3s ease;
-    background: #000;
+    z-index: 1;
+    filter: blur(50px) brightness(0.55) saturate(1.3);
+    transform: scale(1.15);
+    transition: opacity 0.7s ease;
+    background: transparent;
 }
 
-body.video-active #ytPlayerHost {
-    position: fixed;
-    inset: 0;
+#ytPlayerHost.video-ready {
+    opacity: 1;
+}
+
+#ytPlayerHost iframe {
     width: 100%;
     height: 100%;
-    opacity: 1;
-    pointer-events: auto;
-    z-index: 20;
-}
-
-body.video-active .stage,
-body.video-active .lyrics-container,
-body.video-active .equalizer-container {
-    opacity: 0;
     pointer-events: none;
 }
 
@@ -316,11 +340,7 @@ body.video-active .equalizer-container {
 
 .corner-btn:hover { background: rgba(255,255,255,0.16); }
 
-#videoHideBtn { display: none; }
-body.video-active #videoToggleBtn { display: none; }
-body.video-active #videoHideBtn { display: flex; }
-
-/* Video/Sıra butonları: equalizer'ın hemen altında, yan yana */
+/* Sıra butonu: equalizer'ın hemen altında */
 .action-row {
     position: fixed;
     left: 60px;
