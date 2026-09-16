@@ -198,6 +198,12 @@ function initPlayer() {
         setPlayIcon(true);
         startEqualizer();
         stage.classList.add("is-playing");
+        
+        // Şarkı çalmaya başladığında adblock uyarısını gizle
+        const adblockHint = document.getElementById("adblockHint");
+        if (adblockHint) {
+          adblockHint.style.display = "none";
+        }
       } else if (e.data === YT.PlayerState.PAUSED) {
         isPlaying = false;
         setPlayIcon(false);
@@ -353,11 +359,6 @@ function closeQueuePanel() {
 }
 
 // ================= Şarkı Sözleri =================
-// Sıra: 1) lyrics.ovh   2) lrclib.net (bulamazsa)
-// TODO: YouTube altyazılarından (captions) üçüncü bir yedek eklemek
-// mümkün ama bunun için sunucu tarafı bir proxy gerekir — YouTube'un
-// timedtext uç noktası CORS'a kapalı ve üçüncü taraf kullanımına uygun
-// belgelenmiş bir API değil, o yüzden statik bu sitede yapılamıyor.
 async function fetchFromLyricsOvh(artist, title) {
   const res = await fetch(`https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`);
   if (!res.ok) return null;
@@ -372,9 +373,6 @@ async function fetchFromLrclibGet(artist, title) {
   return res.json();
 }
 
-// /api/get tam eşleşme ister ve YouTube başlıklarından türetilen artist/title
-// çiftleri nadiren birebir tutar; bu yüzden çoğu şarkıda sonuç boş dönüyordu.
-// /api/search esnek arama yapar, bulamadığında buna düşüyoruz.
 async function fetchFromLrclibSearch(artist, title) {
   const url = `https://lrclib.net/api/search?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(title)}`;
   const res = await fetch(url);
@@ -422,9 +420,6 @@ function renderPlainLyrics(text) {
     .join("");
 }
 
-// Şu anki oynatma zamanına göre aktif satırı bulur ve tek satırlık
-// gösterimi Spotify tarzı kayarak/solarak günceller. updateProgress()
-// içinden çağrılır.
 function updateActiveLyricLine(currentTime) {
   if (!syncedLyrics || !syncedLyrics.length) return;
   let idx = -1;
@@ -479,7 +474,6 @@ async function loadLyrics(track) {
   lyricsContent.innerHTML = "";
 
   for (const { artist, title } of candidates) {
-    // 1) lrclib: senkron söz sağlayan asıl kaynak, önce bunu dene
     try {
       const data = await fetchLrclibResult(artist, title);
       if (data && data.syncedLyrics) {
@@ -494,14 +488,12 @@ async function loadLyrics(track) {
       /* sessiz geç */
     }
 
-    // 2) lyrics.ovh: sadece düz söz verir, lrclib'de hiçbir şey
-    // bulunamazsa yedek olarak devreye girer
     lyricsStatus.textContent = "Sözler aranıyor...";
     try {
       const lyrics = await fetchFromLyricsOvh(artist, title);
       if (lyrics) { renderPlainLyrics(lyrics); return; }
     } catch {
-      /* sessiz geç, bir sonraki adayı dene */
+      /* sessiz geç */
     }
   }
 
@@ -511,8 +503,6 @@ async function loadLyrics(track) {
 }
 
 // ================= HUD Otomatik Gizleme =================
-// Fare belirli bir süre hareket etmezse kontrol arayüzü (HUD) otomatik
-// gizlenir; herhangi bir harekette veya dokunmada tekrar görünür.
 let hudTimeout = null;
 function showHud() {
   document.body.classList.remove("hud-hidden");
@@ -610,7 +600,6 @@ function init() {
   });
   queueCloseBtn.addEventListener("click", closeQueuePanel);
 
-  // "Geri Dön": müziği kesmeden mini oynatıcıya devret
   backLink.addEventListener("click", () => {
     if (ytPlayer && ytPlayer.getCurrentTime) {
       writeNowPlaying({
