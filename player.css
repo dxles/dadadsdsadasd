@@ -559,3 +559,35 @@ body.hud-hidden .controls {
     #volumeSlider { width: 50px; }
     .queue-panel { width: 100%; }
 }
+
+/* SIRA BUTONLARI VE EQUALIZER DÜZENİ */
+.equalizer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.queue-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+/* LYRICS SMOOTH AKIŞ */
+#lyrics-container {
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    height: 100%;
+    padding-bottom: 50%;
+}
+.lyric-line {
+    transition: all 0.4s ease-in-out;
+    opacity: 0.5;
+}
+.lyric-line.active {
+    opacity: 1;
+    transform: scale(1.05);
+    font-weight: bold;
+    color: #fff;
+}

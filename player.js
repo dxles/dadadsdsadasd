@@ -561,3 +561,15 @@ function init() {
 }
 
 init();
+
+// Senkronize lyrics düzeltmesi ve smooth scroll
+function scrollToActiveLyric() {
+    const activeLyric = document.querySelector('.lyric-line.active');
+    const container = document.getElementById('lyrics-container');
+    if(activeLyric && container) {
+        container.scrollTo({
+            top: activeLyric.offsetTop - (container.clientHeight / 2) + (activeLyric.clientHeight / 2),
+            behavior: 'smooth'
+        });
+    }
+}
