@@ -487,8 +487,8 @@ async function refreshFromYouTube() {
       (data.items || []).forEach(v => {
         results.push({
           id: v.id.videoId,
-          title: v.snippet.title,
-          channel: v.snippet.channelTitle,
+          title: decodeHtmlEntities(v.snippet.title),
+          channel: decodeHtmlEntities(v.snippet.channelTitle),
           genre: item.genre,
         });
       });
@@ -544,8 +544,8 @@ async function doAddSearch() {
     addResults.innerHTML = "";
     items.forEach(v => {
       const id = v.id.videoId;
-      const title = v.snippet.title;
-      const channel = v.snippet.channelTitle;
+      const title = decodeHtmlEntities(v.snippet.title);
+      const channel = decodeHtmlEntities(v.snippet.channelTitle);
       const thumb = v.snippet.thumbnails?.default?.url || `https://i.ytimg.com/vi/${id}/default.jpg`;
 
       const row = document.createElement("div");
@@ -618,7 +618,7 @@ async function findYoutubeIdForTrack(query, ytKey) {
   const data = await res.json();
   const item = (data.items || [])[0];
   if (!item) return null;
-  return { id: item.id.videoId, title: item.snippet.title, channel: item.snippet.channelTitle };
+  return { id: item.id.videoId, title: decodeHtmlEntities(item.snippet.title), channel: decodeHtmlEntities(item.snippet.channelTitle) };
 }
 
 async function doSpotifyImport() {

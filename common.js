@@ -17,6 +17,14 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// YouTube API başlıkları bazen "&amp;" gibi HTML entity kaçışlı gelir.
+// Bunu ham metne çevirip tekrar (çift) kaçışı önlemek için kullan.
+function decodeHtmlEntities(str) {
+  const div = document.createElement("div");
+  div.innerHTML = str || "";
+  return div.textContent || "";
+}
+
 // ---- YouTube API anahtarı ----
 function getApiKey() {
   return localStorage.getItem(STORAGE_KEYS.apiKey) || "";

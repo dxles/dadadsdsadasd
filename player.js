@@ -132,8 +132,12 @@ function initPlayer() {
       lastVolume = vol || 100;
       ytPlayer.playVideo();
       playerStatus.textContent = "";
-      durTimeEl.textContent = "0:00";
-      progressInterval = setInterval(updateProgress, 500);
+      const dur0 = ytPlayer.getDuration() || 0;
+      if (dur0 > 0) {
+        seekBar.max = String(dur0);
+        durTimeEl.textContent = formatTime(dur0);
+      }
+      progressInterval = setInterval(updateProgress, 250);
     },
     onStateChange: (e) => {
       if (e.data === YT.PlayerState.PLAYING) {
@@ -164,10 +168,10 @@ function updateProgress() {
   const dur = ytPlayer.getDuration() || 0;
   const cur = ytPlayer.getCurrentTime() || 0;
   if (dur > 0) {
-    seekBar.max = dur;
-    seekBar.value = cur;
+    seekBar.max = String(dur);
     durTimeEl.textContent = formatTime(dur);
   }
+  seekBar.value = String(cur);
   curTimeEl.textContent = formatTime(cur);
 
   // Mini oynatıcı ile devam edebilmek için ilerlemeyi kaydet
@@ -209,8 +213,14 @@ function goToTrack(song) {
   loadLyrics(current);
   renderQueuePanel();
 
+  seekBar.value = "0";
+  seekBar.max = "100";
+  curTimeEl.textContent = "0:00";
+  durTimeEl.textContent = "0:00";
+
   if (ytPlayer && ytPlayer.loadVideoById) {
     ytPlayer.loadVideoById(current.id);
+    if (!progressInterval) progressInterval = setInterval(updateProgress, 250);
   } else {
     initPlayer();
   }
@@ -404,15 +414,18 @@ function init() {
     localStorage.setItem("cinla_volume", String(v));
   });
 
-  seekBar.addEventListener("mousedown", () => { isSeeking = true; });
-  seekBar.addEventListener("touchstart", () => { isSeeking = true; });
+  function commitSeek() {
+    if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(Number(seekBar.value), true);
+    isSeeking = false;
+  }
+  seekBar.addEventListener("pointerdown", () => { isSeeking = true; });
   seekBar.addEventListener("input", () => {
+    isSeeking = true;
     curTimeEl.textContent = formatTime(Number(seekBar.value));
   });
-  seekBar.addEventListener("change", () => {
-    if (ytPlayer) ytPlayer.seekTo(Number(seekBar.value), true);
-    isSeeking = false;
-  });
+  seekBar.addEventListener("change", commitSeek);
+  seekBar.addEventListener("pointerup", commitSeek);
+  seekBar.addEventListener("touchend", commitSeek);
 
   videoToggleBtn.addEventListener("click", showVideo);
   videoHideBtn.addEventListener("click", hideVideo);
