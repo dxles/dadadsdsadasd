@@ -81,7 +81,7 @@ input { font-family: inherit; }
     height: 100vh;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 0 320px 0 60px;
     transition: opacity 0.35s ease;
 }
@@ -247,7 +247,13 @@ input { font-family: inherit; }
     font-size: 15px;
     font-weight: 600;
     line-height: 1.9;
-    color: rgba(255,255,255,0.55);
+    color: rgba(255,255,255,0.4);
+    transition: color 0.25s ease, transform 0.25s ease;
+}
+
+#lyricsContent p.active {
+    color: var(--text-primary);
+    transform: scale(1.03);
 }
 
 #lyricsContent p:empty::before {
