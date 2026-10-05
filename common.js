@@ -6,8 +6,6 @@ const STORAGE_KEYS = {
   queue: "cinla_queue",
   queueMeta: "cinla_queue_meta",
   playlists: "cinla_playlists",
-  spotifyId: "cinla_spotify_client_id",
-  spotifySecret: "cinla_spotify_client_secret",
   nowPlaying: "cinla_now_playing",
 };
 
@@ -130,19 +128,6 @@ function removeSongFromPlaylist(playlistId, songId) {
   pl.songs = pl.songs.filter(s => s.id !== songId);
   savePlaylists(playlists);
   return true;
-}
-
-// ---- Spotify kimlik bilgileri ----
-function getSpotifyCreds() {
-  return {
-    id: localStorage.getItem(STORAGE_KEYS.spotifyId) || "",
-    secret: localStorage.getItem(STORAGE_KEYS.spotifySecret) || "",
-  };
-}
-
-function setSpotifyCreds(id, secret) {
-  localStorage.setItem(STORAGE_KEYS.spotifyId, id || "");
-  localStorage.setItem(STORAGE_KEYS.spotifySecret, secret || "");
 }
 
 // ---- "Şimdi çalınıyor" (mini oynatıcı devri için) ----

@@ -1,884 +1,695 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+/* Çınla: lacivert gece zemini, İznik çinisinden mercan ve turkuaz.
+   Not: player.html kendi player.css'ini kullanır, bu dosya sadece liste sayfasıdır. */
 
 :root {
-    --spotify-green: #1DB954;
-    --dark-bg: #121212;
-    --dark-card: #181818;
-    --dark-hover: #282828;
-    --text-primary: #FFFFFF;
-    --text-secondary: #B3B3B3;
-    --danger: #E22134;
-    --radius: 10px;
+    --ink: #0F1733;
+    --ink-2: #151E40;
+    --ink-3: #1F2A58;
+    --line: rgba(237, 235, 228, 0.12);
+    --text: #EDEBE4;
+    --muted: #98A2C8;
+    --coral: #F0674B;
+    --coral-hi: #FF7B60;
+    --turq: #4CC9B5;
+    --danger: #FF7A7A;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+
+    --font: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body {
-    height: 100%;
-}
+html, body { height: 100%; }
 
 body {
-    font-family: 'Montserrat', sans-serif;
-    background: var(--dark-bg);
-    color: var(--text-primary);
-    line-height: 1.6;
+    font-family: var(--font);
+    font-size: 15px;
+    background: var(--ink);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
 
-button {
-    font-family: inherit;
-    cursor: pointer;
+button { font-family: inherit; cursor: pointer; color: inherit; }
+input, textarea { font-family: inherit; color: var(--text); }
+
+a { color: var(--turq); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+[hidden] { display: none !important; }
+
+:focus-visible {
+    outline: 2px solid var(--turq);
+    outline-offset: 2px;
 }
 
-input {
-    font-family: inherit;
+/* ---------- Ortak parçalar ---------- */
+.btn {
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
+.btn:disabled { opacity: 0.55; cursor: default; }
 
-a {
-    color: var(--spotify-green);
-    text-decoration: none;
-    transition: opacity 0.3s ease;
-}
+.btn-primary { background: var(--coral); color: var(--ink); }
+.btn-primary:hover:not(:disabled) { background: var(--coral-hi); }
 
-a:hover {
-    opacity: 0.8;
-}
+.btn-quiet { background: transparent; border-color: var(--line); color: var(--text); }
+.btn-quiet:hover:not(:disabled) { background: var(--ink-3); }
 
-.app {
-    display: flex;
-    min-height: 100vh;
-}
+.btn-wide { width: 100%; padding: 12px 16px; }
+.btn-small { padding: 7px 12px; font-size: 13px; }
 
-/* Sidebar */
-.sidebar {
-    width: 260px;
+.icon-btn {
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
-    background: var(--dark-card);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 24px 20px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+.icon-btn:hover { color: var(--turq); border-color: var(--turq); }
+
+input[type="text"], input[type="search"], input[type="url"], input[type="password"], textarea {
+    background: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 10px 12px;
+    font-size: 14px;
+    min-width: 0;
+    width: 100%;
+}
+input::placeholder, textarea::placeholder { color: rgba(152, 162, 200, 0.7); }
+input:focus, textarea:focus { outline: none; border-color: var(--turq); }
+textarea { resize: vertical; line-height: 1.4; }
+
+.note { color: var(--muted); font-size: 13px; }
+
+/* ---------- Yerleşim ---------- */
+.app { display: flex; height: 100dvh; }
+
+.sidebar {
+    width: 288px;
+    flex-shrink: 0;
+    background: var(--ink-2);
+    border-right: 1px solid var(--line);
+    padding: 28px 22px 22px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 22px;
+    overflow-y: auto;
 }
 
-.brand {
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    color: var(--spotify-green);
-}
-
-.search-box {
-    display: flex;
-    gap: 8px;
-}
-
-.search-box input {
+.content {
     flex: 1;
     min-width: 0;
-    background: var(--dark-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    padding: 10px 12px;
-    font-size: 14px;
-    transition: border-color 0.3s ease;
+    padding: 36px 48px 120px;
+    overflow-y: auto;
 }
 
-.search-box input:focus {
-    outline: none;
-    border-color: var(--spotify-green);
+/* ---------- Marka ---------- */
+.brand { display: flex; align-items: center; gap: 12px; }
+
+.brand-mark { width: 38px; height: 38px; flex-shrink: 0; overflow: visible; }
+.brand-mark .ring { fill: none; stroke: var(--turq); stroke-width: 1.8; }
+.brand-mark .ring:nth-child(2) { opacity: 0.65; }
+.brand-mark .ring:nth-child(3) { opacity: 0.4; }
+.brand-mark .dot { fill: var(--coral); }
+
+.brand-name {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1;
 }
 
-.search-box button {
-    background: var(--dark-hover);
-    border: none;
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    padding: 10px 14px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: background 0.3s ease;
-}
+/* ---------- Arama ve türler ---------- */
+.search-box { display: flex; gap: 8px; }
 
-.search-box button:hover {
-    background: #333;
-}
-
-.genre-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
+.genre-nav { display: flex; flex-direction: column; gap: 2px; }
 
 .genre-btn {
+    position: relative;
     background: none;
     border: none;
-    color: var(--text-secondary);
     text-align: left;
-    padding: 10px 12px;
-    border-radius: var(--radius);
-    font-size: 14px;
+    padding: 9px 12px 9px 14px;
+    border-radius: var(--r-sm);
+    color: var(--muted);
+    font-size: 15px;
     font-weight: 500;
     transition: background 0.2s ease, color 0.2s ease;
 }
-
-.genre-btn:hover {
-    background: var(--dark-hover);
-    color: var(--text-primary);
+.genre-btn:hover { color: var(--text); background: rgba(31, 42, 88, 0.6); }
+.genre-btn.active { color: var(--text); background: var(--ink-3); font-weight: 600; }
+.genre-btn.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--turq);
 }
 
-.genre-btn.active {
-    background: var(--dark-hover);
-    color: var(--spotify-green);
-}
-
-/* Çalma Listelerim (sidebar) */
-.playlist-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
+/* ---------- Çalma listelerim ---------- */
+.playlist-nav { display: flex; flex-direction: column; gap: 8px; }
 
 .playlist-nav-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-.playlist-new-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid var(--text-secondary);
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    line-height: 1;
-    transition: all 0.2s ease;
-}
-
-.playlist-new-btn:hover {
-    border-color: var(--spotify-green);
-    color: var(--spotify-green);
+    color: var(--text);
 }
 
 .playlist-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: 160px;
+    max-height: 168px;
     overflow-y: auto;
 }
 
-.playlist-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
+.playlist-item { display: flex; align-items: center; gap: 4px; }
 
 .playlist-btn {
+    position: relative;
     flex: 1;
     min-width: 0;
     background: none;
     border: none;
-    color: var(--text-secondary);
+    color: var(--muted);
     text-align: left;
-    padding: 8px 10px;
-    border-radius: var(--radius);
-    font-size: 13px;
+    padding: 7px 10px 7px 14px;
+    border-radius: var(--r-sm);
+    font-size: 14px;
     font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: background 0.2s ease, color 0.2s ease;
 }
-
-.playlist-btn:hover {
-    background: var(--dark-hover);
-    color: var(--text-primary);
-}
-
-.playlist-btn.active {
-    background: var(--dark-hover);
-    color: var(--spotify-green);
+.playlist-btn:hover { color: var(--text); background: rgba(31, 42, 88, 0.6); }
+.playlist-btn.active { color: var(--text); background: var(--ink-3); font-weight: 600; }
+.playlist-btn.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    bottom: 7px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--turq);
 }
 
 .playlist-del-btn {
     flex-shrink: 0;
     background: none;
     border: none;
-    color: var(--text-secondary);
-    font-size: 13px;
+    color: var(--muted);
+    font-size: 12px;
     padding: 4px 6px;
-    border-radius: 6px;
+    border-radius: var(--r-sm);
     opacity: 0;
     transition: opacity 0.15s ease, color 0.15s ease;
 }
+.playlist-item:hover .playlist-del-btn,
+.playlist-del-btn:focus-visible { opacity: 1; }
+.playlist-del-btn:hover { color: var(--danger); }
 
-.playlist-item:hover .playlist-del-btn {
-    opacity: 1;
-}
+.playlist-empty-hint { font-size: 13px; color: var(--muted); padding: 4px 14px; }
 
-.playlist-del-btn:hover {
-    color: var(--danger);
-}
-
-.playlist-empty-hint {
-    font-size: 12px;
-    color: var(--text-secondary);
-    padding: 4px 10px;
-}
-
-.add-song-btn {
-    background: var(--spotify-green);
-    color: #fff;
-    border: none;
-    border-radius: 50px;
-    padding: 12px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.add-song-btn:hover {
-    background: #1ed760;
-    transform: scale(1.03);
-}
-
-.api-key-box {
-    margin-top: auto;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+/* ---------- Spotify aktarımı ---------- */
+.import-box {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    padding: 14px;
+    background: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
 }
 
-.api-key-label-row {
+.import-box > label { font-size: 14px; font-weight: 600; }
+
+.import-hint { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+
+.import-progress {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--ink-3);
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.import-progress.on { opacity: 1; }
+.import-progress span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: var(--coral);
+    transform: scaleX(0);
+    transform-origin: left center;
+}
+
+.import-status { font-size: 12.5px; color: var(--muted); min-height: 18px; line-height: 1.4; }
+
+.paste-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+    margin-top: 2px;
+    border-top: 1px solid var(--line);
+}
+.paste-box label { font-size: 12.5px; color: var(--text); }
+
+/* ---------- Sidebar altı ---------- */
+.sidebar-foot {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.key-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+.key-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.api-key-box label {
-    font-size: 12px;
-    color: var(--text-secondary);
+    font-size: 13px;
+    color: var(--muted);
     font-weight: 500;
 }
 
-.api-help-btn {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    border-radius: 50%;
-    border: 1px solid var(--text-secondary);
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    line-height: 1;
-    transition: all 0.2s ease;
-}
+.key-row { display: flex; gap: 8px; }
+.key-row .btn { padding: 8px 12px; font-size: 13px; }
+.key-row input { font-size: 13px; padding: 8px 10px; }
 
-.api-help-btn:hover {
-    border-color: var(--spotify-green);
-    color: var(--spotify-green);
-}
+.key-hint { font-size: 12px; color: var(--muted); }
 
-.api-key-box input {
-    background: var(--dark-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    padding: 9px 10px;
-    font-size: 13px;
-    transition: border-color 0.3s ease;
-}
-
-.api-key-box input:focus {
-    outline: none;
-    border-color: var(--spotify-green);
-}
-
-.api-key-box button {
-    background: transparent;
-    border: 2px solid var(--spotify-green);
-    color: var(--spotify-green);
-    border-radius: 50px;
-    padding: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.api-key-box button:hover {
-    background: var(--spotify-green);
-    color: #fff;
-}
-
-.api-hint {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin: 0;
-    line-height: 1.4;
-}
-
-/* Content */
-.content {
-    flex: 1;
-    padding: 32px 40px;
-    overflow-y: auto;
-}
-
+/* ---------- İçerik ---------- */
 .content-header {
     display: flex;
-    align-items: baseline;
+    align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 20px;
+    gap: 16px;
+    margin-bottom: 12px;
 }
 
 .content-header h1 {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    margin: 0;
-}
-
-.refresh-btn {
-    background: var(--dark-card);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50px;
-    color: var(--text-secondary);
-    padding: 9px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.refresh-btn:hover {
-    background: var(--dark-hover);
-    color: var(--text-primary);
+    font-size: clamp(2.4rem, 5.2vw, 4.25rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+    overflow-wrap: anywhere;
 }
 
 .status-bar {
-    font-size: 13px;
-    color: var(--text-secondary);
-    min-height: 18px;
-    margin-bottom: 16px;
+    font-size: 14px;
+    color: var(--muted);
+    min-height: 22px;
+    margin-bottom: 28px;
 }
 
 .song-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 30px 22px;
 }
 
-.song-card {
+/* ---------- Şarkı satırı: kutu yok, kapak ve iki satır yazı ---------- */
+.song-card { position: relative; }
+
+.song-card a.song-card-link { display: block; color: inherit; text-decoration: none; }
+
+.track-thumb {
     position: relative;
-    background: var(--dark-card);
-    border-radius: 15px;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--r-sm);
     overflow: hidden;
-    transition: transform 0.3s ease, background 0.3s ease;
+    background: var(--ink-3);
 }
 
-/* Şarkı kartındaki "çalma listesine ekle" butonu ve menüsü */
+.track-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.track-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(to top, rgba(15, 23, 51, 0.55), rgba(15, 23, 51, 0));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.track-play span {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--coral);
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+}
+.song-card:hover .track-play,
+.song-card-link:focus-visible .track-play { opacity: 1; }
+
+.song-card-title {
+    margin-top: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.song-card-channel {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .card-add-btn {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     border: none;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(15, 23, 51, 0.78);
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
     line-height: 1;
+    display: grid;
+    place-items: center;
     opacity: 0;
-    transition: opacity 0.2s ease, background 0.2s ease;
+    transition: opacity 0.2s ease, background 0.2s ease, color 0.2s ease;
     z-index: 2;
 }
-
 .song-card:hover .card-add-btn,
-.card-add-btn.menu-open {
-    opacity: 1;
-}
-
-.card-add-btn:hover {
-    background: var(--spotify-green);
-}
+.card-add-btn:focus-visible,
+.card-add-btn.menu-open { opacity: 1; }
+.card-add-btn:hover { background: var(--coral); color: var(--ink); }
 
 .card-add-menu {
     position: absolute;
-    top: 40px;
+    top: 44px;
     right: 8px;
     z-index: 3;
-    background: var(--dark-hover);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    padding: 6px;
-    min-width: 160px;
-    max-height: 200px;
+    min-width: 176px;
+    max-height: 210px;
     overflow-y: auto;
+    padding: 6px;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    background: var(--ink-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    box-shadow: 0 12px 32px rgba(5, 8, 22, 0.55);
 }
 
 .card-add-menu button {
     background: none;
     border: none;
-    color: var(--text-primary);
     text-align: left;
     padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.card-add-menu button:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
+.card-add-menu button:hover { background: rgba(237, 235, 228, 0.08); }
 .card-add-menu button.new-playlist-opt {
-    color: var(--spotify-green);
+    color: var(--turq);
     font-weight: 600;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--line);
     margin-top: 2px;
-    padding-top: 8px;
+    padding-top: 10px;
 }
-
-.song-card:hover {
-    background: var(--dark-hover);
-    transform: translateY(-5px);
-}
-
-.song-card a {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-}
-
-.song-card img {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    object-fit: cover;
-    display: block;
-    background: #000;
-}
-
-.song-card-info {
-    padding: 12px 14px 14px;
-}
-
-.song-card-title {
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.3;
-    margin: 0 0 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.song-card-channel {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+.card-add-menu .menu-empty { font-size: 13px; color: var(--muted); padding: 6px 10px; display: block; }
 
 .empty-state {
-    color: var(--text-secondary);
-    font-size: 14px;
-    padding: 40px 0;
-    text-align: center;
+    grid-column: 1 / -1;
+    max-width: 46ch;
+    padding: 24px 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.55;
 }
 
-/* Modal */
+/* ---------- Modallar ---------- */
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    background: rgba(8, 12, 30, 0.72);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
 }
-
-.modal.hidden {
-    display: none;
-}
+.modal.hidden { display: none; }
 
 .modal-box {
-    background: var(--dark-card);
-    border-radius: 15px;
-    padding: 28px;
     width: 480px;
-    max-width: 90vw;
-    max-height: 80vh;
+    max-width: 92vw;
+    max-height: 82vh;
+    padding: 26px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    gap: 16px;
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 64px rgba(5, 8, 22, 0.6);
 }
 
-.modal-box h2 {
-    margin: 0;
-    font-size: 20px;
-    color: var(--spotify-green);
-}
+.modal-box h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 
-.modal-box input {
-    background: var(--dark-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    padding: 12px;
-    font-size: 14px;
-    transition: border-color 0.3s ease;
-}
+.modal-row { display: flex; gap: 8px; }
+.modal-row input { flex: 1; }
 
-.modal-box input:focus {
-    outline: none;
-    border-color: var(--spotify-green);
-}
-
-.modal-box > button {
-    background: var(--spotify-green);
-    border: none;
-    border-radius: 50px;
-    color: #fff;
-    padding: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.modal-box > button:hover {
-    background: #1ed760;
-}
+.modal-close { align-self: flex-end; }
 
 .add-results {
-    overflow-y: auto;
-    max-height: 320px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
 }
 
 .add-result-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: var(--radius);
-    background: var(--dark-bg);
+    gap: 12px;
+    padding: 8px;
+    border-radius: var(--r-md);
+    background: var(--ink);
 }
-
 .add-result-item img {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    aspect-ratio: 16 / 9;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: var(--r-sm);
     flex-shrink: 0;
 }
-
-.add-result-item .info {
-    flex: 1;
-    min-width: 0;
-}
-
+.add-result-item .info { flex: 1; min-width: 0; }
 .add-result-item .info p {
-    margin: 0;
-    font-size: 13px;
+    font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.add-result-item .info .sub { color: var(--muted); font-size: 12.5px; }
 
-.add-result-item .info .sub {
-    color: var(--text-secondary);
-    font-size: 11px;
-}
-
-.add-result-item button {
-    background: var(--spotify-green);
-    color: #fff;
-    border: none;
-    border-radius: 50px;
-    padding: 7px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    flex-shrink: 0;
-    transition: background 0.3s ease;
-}
-
-.add-result-item button:hover {
-    background: #1ed760;
-}
-
-/* Spotify içe aktarma satırı (şarkı ekle modalı içinde) */
-.spotify-import-row {
-    display: flex;
-    gap: 8px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    margin-top: 4px;
-}
-
-.spotify-import-row input {
-    flex: 1;
-    min-width: 0;
-    background: var(--dark-bg);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius);
-    color: var(--text-primary);
-    padding: 10px 12px;
-    font-size: 13px;
-}
-
-.spotify-import-row input:focus {
-    outline: none;
-    border-color: var(--spotify-green);
-}
-
-.spotify-import-row button {
-    background: #1DB954;
-    border: none;
-    border-radius: var(--radius);
-    color: #fff;
-    padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-.spotify-import-row button:hover {
-    background: #1ed760;
-}
-
-.spotify-import-row button:disabled {
-    opacity: 0.6;
-    cursor: default;
-}
-
-.spotify-import-status {
-    font-size: 12px;
-    color: var(--text-secondary);
-    min-height: 16px;
-}
-
-.close-modal-btn {
-    align-self: flex-end;
-    background: transparent !important;
-    color: var(--text-secondary) !important;
-    padding: 6px 12px !important;
-}
-
-.close-modal-btn:hover {
-    color: var(--text-primary) !important;
-}
-
-/* API yardım modalı */
-.api-help-box {
-    width: 560px;
-}
+.api-help-box { width: 560px; }
 
 .api-steps {
-    margin: 0;
     padding-left: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
     overflow-y: auto;
-    max-height: 50vh;
+    max-height: 48vh;
 }
-
-.api-steps li strong {
-    font-size: 14px;
-    color: var(--text-primary);
-}
-
-.api-steps li p {
-    margin: 4px 0 0;
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-}
-
+.api-steps li::marker { color: var(--coral); font-weight: 700; }
+.api-steps li strong { font-size: 15px; }
+.api-steps li p { margin-top: 3px; font-size: 14px; color: var(--muted); line-height: 1.5; }
 .api-steps li p code {
-    background: var(--dark-bg);
+    background: var(--ink);
     border-radius: 4px;
     padding: 1px 5px;
-    font-size: 12px;
+    font-size: 13px;
+    color: var(--text);
 }
 
 .api-help-note {
-    font-size: 12px;
-    color: var(--text-secondary);
-    background: var(--dark-bg);
-    border-radius: var(--radius);
+    font-size: 13.5px;
+    color: var(--muted);
+    background: var(--ink);
+    border-left: 3px solid var(--coral);
+    border-radius: var(--r-sm);
     padding: 10px 12px;
     line-height: 1.5;
 }
+.api-help-note strong { color: var(--text); }
 
-.api-help-note strong {
-    color: var(--text-primary);
-}
-
-@media (max-width: 780px) {
-    .app { flex-direction: column; }
-    .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .content { padding: 20px; }
-}
-
-/* ---- Sağ alt mini oynatıcı ---- */
+/* ---------- Mini oynatıcı ---------- */
 .mini-player {
     position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 999;
+    right: 20px;
+    bottom: 20px;
+    z-index: 90;
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 300px;
-    max-width: calc(100vw - 36px);
-    padding: 10px 12px;
-    background: rgba(24, 24, 24, 0.96);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 320px;
+    max-width: calc(100vw - 40px);
+    padding: 10px 10px 10px 12px;
+    background: rgba(21, 30, 64, 0.94);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
     border-radius: 14px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
-    transform: translateY(24px) scale(0.95);
+    box-shadow: 0 16px 40px rgba(5, 8, 22, 0.55);
+    transform: translateY(20px);
     opacity: 0;
     pointer-events: none;
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
+.mini-player.visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+.mini-player.hidden { display: none; }
 
-.mini-player.visible {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.mini-player.hidden {
-    display: none;
-}
-
-.mini-player a.mini-info-link {
-    text-decoration: none;
-    color: inherit;
-    display: contents;
-}
+.mini-player a.mini-info-link { display: contents; color: inherit; text-decoration: none; }
 
 .mini-cover {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-sm);
     object-fit: cover;
     flex-shrink: 0;
-    background: #000;
+    background: var(--ink-3);
 }
 
-.mini-info {
-    min-width: 0;
-    flex: 1;
-}
+.mini-info { min-width: 0; flex: 1; }
 
 .mini-title {
-    margin: 0;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
+    line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .mini-channel {
-    margin: 2px 0 0;
-    font-size: 11px;
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.mini-eq {
-    display: flex;
-    align-items: flex-end;
-    gap: 2px;
-    height: 14px;
-    flex-shrink: 0;
-}
-
+.mini-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; flex-shrink: 0; }
 .mini-eq span {
     display: block;
-    width: 2.5px;
+    width: 3px;
     height: 3px;
-    background: var(--spotify-green);
+    background: var(--coral);
     border-radius: 1px;
-    transform-origin: bottom center;
 }
 
 .mini-btn {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
     background: none;
     border: none;
-    color: var(--text-primary);
-    font-size: 13px;
-    cursor: pointer;
-    padding: 6px;
     border-radius: 50%;
-    flex-shrink: 0;
+    color: var(--text);
     transition: background 0.2s ease, color 0.2s ease;
 }
+.mini-btn:hover { background: var(--ink-3); color: var(--coral); }
+.mini-close:hover { color: var(--danger); }
 
-.mini-btn:hover {
-    background: var(--dark-hover);
-    color: var(--spotify-green);
+/* Gizli oynatıcı sahnesi: kalite seçimi oynatıcı boyutuna bağlı olduğu için
+   Full HD boyutunda, ama görünmez ve tıklanamaz. */
+.yt-mini-stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: 1080px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
 }
+.yt-mini-stage iframe { width: 100%; height: 100%; border: 0; }
 
-.mini-close:hover {
-    color: var(--danger);
+/* ---------- Küçük ekran ---------- */
+@media (max-width: 780px) {
+    .app { flex-direction: column; height: auto; min-height: 100dvh; }
+    .sidebar {
+        width: 100%;
+        overflow: visible;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+        padding: 22px 18px;
+        gap: 22px;
+    }
+    .content { padding: 24px 18px 120px; overflow: visible; }
+    .song-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 24px 14px; }
+    .card-add-btn { opacity: 1; }
+    .playlist-del-btn { opacity: 1; }
 }
 
 @media (max-width: 560px) {
-    .mini-player {
-        left: 12px;
-        right: 12px;
-        width: auto;
-        bottom: 12px;
-    }
+    .mini-player { left: 12px; right: 12px; width: auto; bottom: 12px; max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
 }

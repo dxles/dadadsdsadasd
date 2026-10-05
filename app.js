@@ -1,3 +1,14 @@
+// ---- GSAP eklentileri ----
+if (window.gsap) {
+  const plugins = [window.Flip, window.ScrollToPlugin, window.SplitText].filter(Boolean);
+  gsap.registerPlugin(...plugins);
+}
+
+const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+function motionOK() {
+  return !!window.gsap && !reduceMotionQuery.matches;
+}
+
 // ---- Durum ----
 let currentGenre = "hepsi";       // "hepsi" | "rap" | "arabesk" | "pop" | "benim" | playlist id ("pl_...")
 let allSongs = [];
@@ -10,6 +21,9 @@ let miniYtPlayer = null;
 let miniIsPlaying = false;
 let miniEqTweens = [];
 let miniSaveInterval = null;
+
+const ICON_PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
 
 function writeMiniProgress() {
   const np = readNowPlaying();
@@ -61,8 +75,9 @@ function initMiniPlayer() {
   const miniPlayBtn = document.getElementById("miniPlayBtn");
   const miniCloseBtn = document.getElementById("miniCloseBtn");
 
+  miniPlayBtn.innerHTML = ICON_PAUSE;
   miniCover.src = `https://i.ytimg.com/vi/${np.id}/mqdefault.jpg`;
-  miniTitle.textContent = np.title || "Bilinmeyen Şarkı";
+  miniTitle.textContent = np.title || "Bilinmeyen şarkı";
   miniChannel.textContent = np.channel || "";
   miniInfoLink.href = `player.html?v=${encodeURIComponent(np.id)}&t=${encodeURIComponent(np.title || "")}&c=${encodeURIComponent(np.channel || "")}`;
 
@@ -76,18 +91,18 @@ function initMiniPlayer() {
       if (np.isPlaying !== false) {
         e.target.playVideo();
       } else {
-        miniPlayBtn.textContent = "▶";
+        miniPlayBtn.innerHTML = ICON_PLAY;
       }
       miniSaveInterval = setInterval(writeMiniProgress, 1000);
     },
     onStateChange: (e) => {
       if (e.data === YT.PlayerState.PLAYING) {
         miniIsPlaying = true;
-        miniPlayBtn.textContent = "❚❚";
+        miniPlayBtn.innerHTML = ICON_PAUSE;
         startMiniEqualizer();
       } else if (e.data === YT.PlayerState.PAUSED) {
         miniIsPlaying = false;
-        miniPlayBtn.textContent = "▶";
+        miniPlayBtn.innerHTML = ICON_PLAY;
         stopMiniEqualizerTweens();
       } else if (e.data === YT.PlayerState.ENDED) {
         miniIsPlaying = false;
@@ -143,19 +158,88 @@ const apiHelpModal = document.getElementById("apiHelpModal");
 const closeApiHelpBtn = document.getElementById("closeApiHelpBtn");
 const newPlaylistBtn = document.getElementById("newPlaylistBtn");
 const playlistList = document.getElementById("playlistList");
-const spotifyClientIdInput = document.getElementById("spotifyClientId");
-const spotifyClientSecretInput = document.getElementById("spotifyClientSecret");
-const saveSpotifyBtn = document.getElementById("saveSpotifyBtn");
+const contentEl = document.getElementById("content");
+const brandName = document.getElementById("brandName");
 const spotifyImportInput = document.getElementById("spotifyImportInput");
 const spotifyImportBtn = document.getElementById("spotifyImportBtn");
 const spotifyImportStatus = document.getElementById("spotifyImportStatus");
+const importProgressFill = document.getElementById("importProgressFill");
+const importProgress = document.getElementById("importProgress");
+const spotifyPasteBox = document.getElementById("spotifyPasteBox");
+const spotifyPasteInput = document.getElementById("spotifyPasteInput");
+const spotifyPasteBtn = document.getElementById("spotifyPasteBtn");
+
+
+// ---- Hareket ----
+// Sayfa açılışında tek bir sahne: halkalar yayılır, "Çınla" yazısı yerine oturur,
+// ardından sol menü ve başlık belirir.
+let brandSplit = null;
+let titleSplit = null;
+
+function playIntro() {
+  if (!motionOK()) return;
+  const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  ready.then(() => {
+    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+
+    document.querySelectorAll(".brand-mark .ring").forEach((ring, i) => {
+      tl.from(ring, { attr: { r: 3 }, opacity: 0, duration: 0.9, ease: "power2.out" }, i * 0.12);
+    });
+    tl.from(".brand-mark .dot", { scale: 0, transformOrigin: "50% 50%", duration: 0.4, ease: "back.out(2.5)" }, 0);
+
+    if (window.SplitText) {
+      brandSplit = SplitText.create(brandName, { type: "chars" });
+      tl.from(brandSplit.chars, { yPercent: 70, opacity: 0, duration: 0.55, stagger: 0.05 }, 0.25);
+      tl.add(() => { if (brandSplit) { brandSplit.revert(); brandSplit = null; } });
+    } else {
+      tl.from(brandName, { opacity: 0, duration: 0.5 }, 0.25);
+    }
+
+    tl.from(".sidebar > *:not(.brand)", { opacity: 0, duration: 0.45, stagger: 0.05, ease: "power1.out" }, 0.45);
+    tl.add(() => animateTitle(), 0.5);
+  });
+}
+
+// Başlık değişince harfler yukarıdan yerine oturur (kullanıcının tıkladığı bir şeye verilen yanıt).
+function animateTitle() {
+  if (!motionOK() || !window.SplitText) return;
+  if (titleSplit) { titleSplit.revert(); titleSplit = null; }
+  titleSplit = SplitText.create(sectionTitle, { type: "chars" });
+  gsap.from(titleSplit.chars, {
+    yPercent: 45,
+    opacity: 0,
+    duration: 0.45,
+    ease: "power3.out",
+    stagger: { each: Math.min(0.025, 0.6 / Math.max(titleSplit.chars.length, 1)) },
+    onComplete: () => { if (titleSplit) { titleSplit.revert(); titleSplit = null; } },
+  });
+}
+
+function setSectionTitle(text) {
+  if (titleSplit) { titleSplit.revert(); titleSplit = null; }
+  sectionTitle.textContent = text;
+  animateTitle();
+}
+
+// Liste değişince içeriği yumuşakça en başa kaydır.
+function scrollContentToTop() {
+  const innerScroll = contentEl.scrollHeight > contentEl.clientHeight && getComputedStyle(contentEl).overflowY !== "visible";
+  const target = innerScroll ? contentEl : window;
+  if (!motionOK() || !window.ScrollToPlugin) {
+    if (innerScroll) contentEl.scrollTop = 0; else window.scrollTo(0, 0);
+    return;
+  }
+  gsap.to(target, { scrollTo: { y: 0, autoKill: true }, duration: 0.5, ease: "power2.out" });
+}
 
 // ---- Başlangıç ----
 function init() {
   apiKeyInput.value = getApiKey();
-  const creds = getSpotifyCreds();
-  spotifyClientIdInput.value = creds.id;
-  spotifyClientSecretInput.value = creds.secret;
+  // Eski sürümde kaydedilmiş Spotify Client ID / Secret artık gerekmiyor, temizle.
+  try {
+    localStorage.removeItem("cinla_spotify_client_id");
+    localStorage.removeItem("cinla_spotify_client_secret");
+  } catch (_) { /* yok say */ }
 
   const cached = getCachedSongs();
   allSongs = cached && cached.length ? cached : SEED_SONGS.slice();
@@ -183,8 +267,9 @@ function init() {
     btn.addEventListener("click", () => {
       setActiveNav(btn);
       currentGenre = btn.dataset.genre;
-      sectionTitle.textContent = btn.textContent;
+      setSectionTitle(btn.textContent);
       renderGrid();
+      scrollContentToTop();
     });
   });
 
@@ -206,22 +291,15 @@ function init() {
 
   refreshBtn.addEventListener("click", refreshFromYouTube);
 
-  saveSpotifyBtn.addEventListener("click", () => {
-    setSpotifyCreds(spotifyClientIdInput.value.trim(), spotifyClientSecretInput.value.trim());
-    setStatus("Spotify bilgileri kaydedildi.");
-  });
-
   spotifyImportBtn.addEventListener("click", doSpotifyImport);
   spotifyImportInput.addEventListener("keydown", e => { if (e.key === "Enter") doSpotifyImport(); });
+  spotifyPasteBtn.addEventListener("click", doPasteImport);
 
-  if (window.gsap) {
-    gsap.from(".sidebar", { x: -16, opacity: 0, duration: 0.45, ease: "power2.out" });
-    gsap.from(".content-header, .status-bar", { y: -8, opacity: 0, duration: 0.4, ease: "power2.out", delay: 0.1 });
-  }
+  playIntro();
 
   addSongBtn.addEventListener("click", () => {
     addModal.classList.remove("hidden");
-    if (window.gsap) {
+    if (motionOK()) {
       gsap.fromTo(addModal, { opacity: 0 }, { opacity: 1, duration: 0.2 });
       gsap.fromTo(".modal-box", { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" });
     }
@@ -229,7 +307,7 @@ function init() {
   });
 
   function closeAddModal() {
-    if (window.gsap) {
+    if (motionOK()) {
       gsap.to(".modal-box", { opacity: 0, y: 8, scale: 0.97, duration: 0.2, ease: "power1.in" });
       gsap.to(addModal, { opacity: 0, duration: 0.2, onComplete: () => addModal.classList.add("hidden") });
     } else {
@@ -245,14 +323,14 @@ function init() {
   // ---- API anahtarı nasıl alınır yardım modalı ----
   function openApiHelp() {
     apiHelpModal.classList.remove("hidden");
-    if (window.gsap) {
+    if (motionOK()) {
       gsap.fromTo(apiHelpModal, { opacity: 0 }, { opacity: 1, duration: 0.2 });
       gsap.fromTo(apiHelpModal.querySelector(".modal-box"), { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" });
     }
   }
 
   function closeApiHelp() {
-    if (window.gsap) {
+    if (motionOK()) {
       gsap.to(apiHelpModal.querySelector(".modal-box"), { opacity: 0, y: 8, scale: 0.97, duration: 0.2, ease: "power1.in" });
       gsap.to(apiHelpModal, { opacity: 0, duration: 0.2, onComplete: () => apiHelpModal.classList.add("hidden") });
     } else {
@@ -278,11 +356,12 @@ function setActiveNav(activeBtn) {
 
 function selectPlaylist(id, name) {
   currentGenre = id;
-  sectionTitle.textContent = name;
+  setSectionTitle(name);
   setActiveNav(null);
   const btn = playlistList.querySelector(`[data-playlist-id="${id}"] .playlist-btn`);
   if (btn) btn.classList.add("active");
   renderGrid();
+  scrollContentToTop();
 }
 
 // ---- Sidebar: çalma listeleri ----
@@ -311,7 +390,7 @@ function renderPlaylistNav() {
         const hepsiBtn = document.querySelector('.genre-btn[data-genre="hepsi"]');
         setActiveNav(hepsiBtn);
         currentGenre = "hepsi";
-        sectionTitle.textContent = "Hepsi";
+        setSectionTitle("Hepsi");
         renderGrid();
       }
     });
@@ -335,7 +414,7 @@ function openCardMenu(btn, song) {
   menu.className = "card-add-menu";
 
   if (!playlists.length) {
-    menu.innerHTML = `<span style="font-size:12px; color:var(--text-secondary); padding:6px 8px; display:block;">Henüz liste yok</span>`;
+    menu.innerHTML = `<span class="menu-empty">Henüz liste yok</span>`;
   } else {
     playlists.forEach(pl => {
       const item = document.createElement("button");
@@ -371,6 +450,8 @@ function setStatus(msg) {
 }
 
 // ---- Grid render ----
+const PLAY_GLYPH = '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>';
+
 function renderGrid(list) {
   const userSongs = getUserSongs();
   const playlists = getPlaylists();
@@ -392,28 +473,36 @@ function renderGrid(list) {
   lastRenderedSongs = songs;
   closeAllCardMenus();
 
-  const flipState = window.gsap && window.Flip ? Flip.getState(songGrid.children) : null;
+  // Aynı şarkı iki listede de varsa Flip onu yerinden yerine taşır, yeni gelenler belirir.
+  const flipState = motionOK() && window.Flip && songGrid.children.length
+    ? Flip.getState(songGrid.querySelectorAll(".song-card"))
+    : null;
 
   songGrid.innerHTML = "";
 
   if (!songs.length) {
-    songGrid.innerHTML = `<div class="empty-state">Burada henüz şarkı yok. "+ Şarkı Ekle" ile kendi şarkını ekleyebilirsin.</div>`;
+    songGrid.innerHTML = `<div class="empty-state">Burada henüz şarkı yok. Soldan bir Spotify listesi aktarabilir ya da "Şarkı ekle" ile arayıp ekleyebilirsin.</div>`;
     return;
   }
 
+  const seenIds = new Set();
   songs.forEach(song => {
     const card = document.createElement("div");
     card.className = "song-card";
+    // Tekrarlı şarkılarda aynı flip kimliği çakışmasın.
+    card.dataset.flipId = seenIds.has(song.id) ? `${song.id}-${seenIds.size}` : song.id;
+    seenIds.add(song.id);
     const thumb = `https://i.ytimg.com/vi/${song.id}/mqdefault.jpg`;
     card.innerHTML = `
-      <button class="card-add-btn" title="Çalma listesine ekle">+</button>
       <a class="song-card-link" href="player.html?v=${encodeURIComponent(song.id)}&t=${encodeURIComponent(song.title)}&c=${encodeURIComponent(song.channel || "")}">
-        <img src="${thumb}" alt="${escapeHtml(song.title)}" loading="lazy">
-        <div class="song-card-info">
-          <p class="song-card-title">${escapeHtml(song.title)}</p>
-          <p class="song-card-channel">${escapeHtml(song.channel || "")}</p>
+        <div class="track-thumb">
+          <img src="${thumb}" alt="" loading="lazy">
+          <div class="track-play" aria-hidden="true"><span>${PLAY_GLYPH}</span></div>
         </div>
+        <p class="song-card-title">${escapeHtml(song.title)}</p>
+        <p class="song-card-channel">${escapeHtml(song.channel || "")}</p>
       </a>
+      <button class="card-add-btn" title="Çalma listesine ekle" aria-label="Çalma listesine ekle">+</button>
     `;
     card.querySelector(".card-add-btn").addEventListener("click", (e) => {
       e.preventDefault();
@@ -428,16 +517,11 @@ function renderGrid(list) {
     songGrid.appendChild(card);
   });
 
-  if (window.gsap) {
-    if (window.Flip && flipState) {
-      Flip.from(flipState, { duration: 0.4, ease: "power2.out", absolute: false });
-    }
-    gsap.from(songGrid.children, {
-      opacity: 0,
-      y: 10,
-      duration: 0.35,
-      stagger: { each: 0.02, from: "start" },
-      ease: "power1.out",
+  if (flipState) {
+    Flip.from(flipState, {
+      duration: 0.45,
+      ease: "power2.out",
+      onEnter: (els) => gsap.fromTo(els, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out" }),
     });
   }
 }
@@ -451,7 +535,7 @@ function doSiteSearch() {
   const filtered = combined.filter(s =>
     s.title.toLowerCase().includes(q) || (s.channel || "").toLowerCase().includes(q)
   );
-  sectionTitle.textContent = `"${searchInput.value.trim()}" için sonuçlar`;
+  setSectionTitle(`"${searchInput.value.trim()}" için sonuçlar`);
   renderGrid(filtered);
 }
 
@@ -520,11 +604,11 @@ async function doAddSearch() {
   if (!q) return;
 
   if (!key) {
-    addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Arama yapmak için önce sol alttan YouTube API anahtarını kaydet.</p>`;
+    addResults.innerHTML = `<p class="note">Arama yapmak için önce sol alttan YouTube API anahtarını kaydet.</p>`;
     return;
   }
 
-  addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Aranıyor...</p>`;
+  addResults.innerHTML = `<p class="note">Aranıyor...</p>`;
 
   try {
     const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=10&q=${encodeURIComponent(q)}&key=${key}`;
@@ -537,7 +621,7 @@ async function doAddSearch() {
     const items = data.items || [];
 
     if (!items.length) {
-      addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Sonuç bulunamadı.</p>`;
+      addResults.innerHTML = `<p class="note">Sonuç bulunamadı.</p>`;
       return;
     }
 
@@ -556,7 +640,7 @@ async function doAddSearch() {
           <p>${escapeHtml(title)}</p>
           <p class="sub">${escapeHtml(channel)}</p>
         </div>
-        <button>Ekle</button>
+        <button class="btn btn-primary btn-small">Ekle</button>
       `;
       row.querySelector("button").addEventListener("click", () => {
         saveUserSong({ id, title, channel, genre: "benim" });
@@ -567,123 +651,219 @@ async function doAddSearch() {
       addResults.appendChild(row);
     });
   } catch (err) {
-    addResults.innerHTML = `<p style="color:var(--text-secondary); font-size:13px;">Hata: ${escapeHtml(err.message)}</p>`;
+    addResults.innerHTML = `<p class="note">Hata: ${escapeHtml(err.message)}</p>`;
   }
 }
 
-// ---- Spotify çalma listesi içe aktarma ----
+// ---- Spotify çalma listesi içe aktarma (Client ID / Secret gerekmez) ----
+// Spotify'ın herkese açık "embed" sayfası, listenin şarkı adlarını ve sanatçılarını
+// zaten içinde taşır. Tarayıcılar o sayfayı doğrudan okumamıza izin vermediği için
+// (CORS) sayfa herkese açık bir CORS proxy üzerinden alınır. Bu yöntemin sınırları:
+//  - Sadece herkese açık listeler çalışır.
+//  - Embed sayfası en fazla ilk 100 şarkıyı verir.
+//  - Proxy servisleri çökerse "listeyi kendin yapıştır" yolu devreye girer.
+
+const CORS_PROXIES = [
+  (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
+
 function extractSpotifyPlaylistId(url) {
   const m = (url || "").match(/playlist[/:]([a-zA-Z0-9]+)/);
   return m ? m[1] : null;
 }
 
-async function getSpotifyToken(clientId, clientSecret) {
-  const res = await fetch("https://accounts.spotify.com/api/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: "Basic " + btoa(`${clientId}:${clientSecret}`),
-    },
-    body: "grant_type=client_credentials",
-  });
-  if (!res.ok) throw new Error(`Spotify token alınamadı (${res.status})`);
-  const data = await res.json();
-  return data.access_token;
+async function fetchWithTimeout(url, ms = 12000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-async function fetchSpotifyPlaylistTracks(playlistId, token) {
-  const tracks = [];
-  let url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`;
-  while (url) {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error(`Spotify çalma listesi alınamadı (${res.status})`);
-    const data = await res.json();
-    (data.items || []).forEach(item => {
-      const t = item.track;
-      if (!t) return;
-      tracks.push({
-        name: t.name,
-        artist: (t.artists || []).map(a => a.name).join(", "),
-      });
-    });
-    url = data.next;
+async function fetchSpotifyEmbedHtml(playlistId) {
+  const target = `https://open.spotify.com/embed/playlist/${playlistId}`;
+  const attempts = [(u) => u, ...CORS_PROXIES];
+  for (const make of attempts) {
+    try {
+      const res = await fetchWithTimeout(make(target));
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (html.includes("__NEXT_DATA__")) return html;
+    } catch (_) {
+      // sıradaki yolu dene
+    }
   }
-  return tracks;
+  throw new Error("Spotify sayfası açılamadı");
+}
+
+function findTrackList(node, depth = 0) {
+  if (!node || typeof node !== "object" || depth > 8) return null;
+  if (Array.isArray(node)) {
+    if (node.length && node[0] && typeof node[0] === "object" && typeof node[0].title === "string" &&
+        (String(node[0].uri || "").startsWith("spotify:track") || "subtitle" in node[0])) {
+      return node;
+    }
+    for (const item of node) {
+      const found = findTrackList(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  for (const key of Object.keys(node)) {
+    const found = findTrackList(node[key], depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+function parseSpotifyEmbed(html) {
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  let data;
+  try { data = JSON.parse(m[1]); } catch { return null; }
+
+  const entity = data?.props?.pageProps?.state?.data?.entity;
+  const list = Array.isArray(entity?.trackList) ? entity.trackList : findTrackList(data);
+  if (!list) return null;
+
+  const tracks = list
+    .filter(t => t && t.title)
+    .map(t => ({
+      name: String(t.title).replace(/\u00a0/g, " ").trim(),
+      artist: String(t.subtitle || "").replace(/\u00a0/g, " ").trim(),
+    }));
+
+  return { name: (entity?.name || entity?.title || "").trim(), tracks };
 }
 
 async function findYoutubeIdForTrack(query, ytKey) {
   const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=1&q=${encodeURIComponent(query)}&key=${ytKey}`;
   const res = await fetch(url);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    const err = new Error(errBody.error?.message || `YouTube API hatası (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
   const data = await res.json();
   const item = (data.items || [])[0];
   if (!item) return null;
   return { id: item.id.videoId, title: decodeHtmlEntities(item.snippet.title), channel: decodeHtmlEntities(item.snippet.channelTitle) };
 }
 
-async function doSpotifyImport() {
-  const link = spotifyImportInput.value.trim();
-  const playlistId = extractSpotifyPlaylistId(link);
-  const { id: clientId, secret: clientSecret } = getSpotifyCreds();
-  const ytKey = getApiKey();
+function setImportProgress(ratio) {
+  importProgress.classList.toggle("on", ratio > 0);
+  if (motionOK()) {
+    gsap.to(importProgressFill, { scaleX: ratio, duration: 0.3, ease: "power1.out", overwrite: true });
+  } else {
+    importProgressFill.style.transform = `scaleX(${ratio})`;
+  }
+}
 
-  if (!playlistId) {
-    spotifyImportStatus.textContent = "Geçerli bir Spotify çalma listesi linki gir (open.spotify.com/playlist/...).";
-    return;
-  }
-  if (!clientId || !clientSecret) {
-    spotifyImportStatus.textContent = "Önce sol alttan Spotify Client ID / Secret bilgilerini kaydet.";
-    return;
-  }
+// Ortak aktarım: şarkı adlarını YouTube'da bulur, yeni bir çalma listesi oluşturur.
+async function importTracks(tracks, playlistName) {
+  const ytKey = getApiKey();
   if (!ytKey) {
-    spotifyImportStatus.textContent = "Şarkıları YouTube'da eşleştirmek için önce YouTube API anahtarını kaydet.";
+    spotifyImportStatus.textContent = "Şarkıları YouTube'da bulmak için önce sol alttan YouTube API anahtarını kaydet.";
     return;
   }
 
   spotifyImportBtn.disabled = true;
-  spotifyImportStatus.textContent = "Spotify'a bağlanılıyor...";
+  spotifyPasteBtn.disabled = true;
+  setImportProgress(0);
 
-  try {
-    const token = await getSpotifyToken(clientId, clientSecret);
-    spotifyImportStatus.textContent = "Çalma listesi okunuyor...";
-    const tracks = await fetchSpotifyPlaylistTracks(playlistId, token);
+  const newPlaylist = createPlaylist(playlistName);
+  let done = 0;
+  let matched = 0;
+  let stoppedMsg = "";
 
-    if (!tracks.length) {
-      spotifyImportStatus.textContent = "Çalma listesinde şarkı bulunamadı.";
-      return;
-    }
-
-    const playlistName = "Spotify İçe Aktarılan " + new Date().toLocaleDateString("tr-TR");
-    const newPlaylist = createPlaylist(playlistName);
-
-    let done = 0;
-    let matched = 0;
-    for (const t of tracks) {
-      done++;
-      spotifyImportStatus.textContent = `Eşleştiriliyor: ${done}/${tracks.length} (${matched} bulundu)`;
-      const query = `${cleanTitleForSearch(t.artist)} - ${cleanTitleForSearch(t.name)}`;
-      try {
-        const found = await findYoutubeIdForTrack(query, ytKey);
-        if (found) {
-          const song = { id: found.id, title: found.title, channel: t.artist || found.channel, genre: "benim" };
-          saveUserSong(song);
-          addSongToPlaylist(newPlaylist.id, song);
-          matched++;
-        }
-      } catch {
-        // tek şarkı hatasında devam et
+  for (const t of tracks) {
+    done++;
+    spotifyImportStatus.textContent = `Aranıyor: ${done}/${tracks.length}, ${matched} şarkı bulundu`;
+    setImportProgress(done / tracks.length);
+    const query = t.artist
+      ? `${cleanTitleForSearch(t.artist)} - ${cleanTitleForSearch(t.name)}`
+      : cleanTitleForSearch(t.name);
+    try {
+      const found = await findYoutubeIdForTrack(query, ytKey);
+      if (found) {
+        const song = { id: found.id, title: found.title, channel: t.artist || found.channel, genre: "benim" };
+        saveUserSong(song);
+        addSongToPlaylist(newPlaylist.id, song);
+        matched++;
+      }
+    } catch (err) {
+      // Kota bitti ya da anahtar geçersizse devam etmenin anlamı yok.
+      if (err.status === 403 || err.status === 400) {
+        stoppedMsg = ` YouTube şunu dedi: ${err.message}`;
+        break;
       }
     }
-
-    renderPlaylistNav();
-    spotifyImportStatus.textContent = `Tamamlandı: "${playlistName}" listesine ${matched}/${tracks.length} şarkı eklendi.`;
-    spotifyImportInput.value = "";
-    if (currentGenre === "benim" || currentGenre === "hepsi") renderGrid();
-  } catch (err) {
-    spotifyImportStatus.textContent = `Hata: ${err.message}`;
-  } finally {
-    spotifyImportBtn.disabled = false;
   }
+
+  renderPlaylistNav();
+  const suffix = stoppedMsg ? ` ${done - 1}/${tracks.length} şarkıda durdu.${stoppedMsg}` : "";
+  spotifyImportStatus.textContent = `"${playlistName}" listesine ${matched}/${tracks.length} şarkı eklendi.${suffix}`;
+  spotifyImportBtn.disabled = false;
+  spotifyPasteBtn.disabled = false;
+  if (matched) selectPlaylist(newPlaylist.id, newPlaylist.name);
+}
+
+async function doSpotifyImport() {
+  const link = spotifyImportInput.value.trim();
+  const playlistId = extractSpotifyPlaylistId(link);
+
+  if (!playlistId) {
+    spotifyImportStatus.textContent = "Geçerli bir Spotify çalma listesi linki yapıştır (open.spotify.com/playlist/...).";
+    return;
+  }
+  if (!getApiKey()) {
+    spotifyImportStatus.textContent = "Şarkıları YouTube'da bulmak için önce sol alttan YouTube API anahtarını kaydet.";
+    return;
+  }
+
+  spotifyImportBtn.disabled = true;
+  spotifyPasteBox.hidden = true;
+  setImportProgress(0);
+  spotifyImportStatus.textContent = "Çalma listesi okunuyor...";
+
+  let parsed = null;
+  try {
+    const html = await fetchSpotifyEmbedHtml(playlistId);
+    parsed = parseSpotifyEmbed(html);
+  } catch (_) {
+    parsed = null;
+  }
+
+  if (!parsed || !parsed.tracks.length) {
+    spotifyImportBtn.disabled = false;
+    spotifyImportStatus.textContent = "Liste okunamadı. Liste herkese açık olmayabilir ya da okuma servisi cevap vermedi. Şarkıları aşağıya yapıştırarak aktarabilirsin.";
+    spotifyPasteBox.hidden = false;
+    return;
+  }
+
+  const playlistName = parsed.name || "Spotify listesi " + new Date().toLocaleDateString("tr-TR");
+  spotifyImportBtn.disabled = false;
+  await importTracks(parsed.tracks, playlistName);
+  spotifyImportInput.value = "";
+}
+
+async function doPasteImport() {
+  const lines = spotifyPasteInput.value
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
+  if (!lines.length) {
+    spotifyImportStatus.textContent = "Önce en az bir şarkı yaz. Her satıra bir şarkı: Sanatçı - Şarkı adı.";
+    return;
+  }
+  const tracks = lines.map(l => ({ name: l, artist: "" }));
+  await importTracks(tracks, "Aktarılan liste " + new Date().toLocaleDateString("tr-TR"));
+  spotifyPasteInput.value = "";
 }
 
 init();

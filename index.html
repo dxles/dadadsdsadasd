@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Çınla — Türkçe Müzik</title>
+<title>Çınla: Türkçe müzik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,14 +14,22 @@
 <div class="app">
 
   <aside class="sidebar">
-    <div class="brand">Çınla</div>
-
-    <div class="search-box">
-      <input type="text" id="searchInput" placeholder="Şarkı, sanatçı ara...">
-      <button id="searchBtn">Ara</button>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="ring" data-r="19" cx="20" cy="20" r="19" />
+        <circle class="ring" data-r="14" cx="20" cy="20" r="14" />
+        <circle class="ring" data-r="9" cx="20" cy="20" r="9" />
+        <circle class="dot" cx="20" cy="20" r="4" />
+      </svg>
+      <span class="brand-name" id="brandName">Çınla</span>
     </div>
 
-    <nav class="genre-nav">
+    <div class="search-box">
+      <input type="search" id="searchInput" placeholder="Şarkı veya sanatçı ara" aria-label="Şarkı veya sanatçı ara">
+      <button id="searchBtn" class="btn btn-quiet">Ara</button>
+    </div>
+
+    <nav class="genre-nav" aria-label="Türler">
       <button class="genre-btn active" data-genre="hepsi">Hepsi</button>
       <button class="genre-btn" data-genre="rap">Rap</button>
       <button class="genre-btn" data-genre="arabesk">Arabesk</button>
@@ -26,72 +37,76 @@
       <button class="genre-btn" data-genre="benim">Eklediklerim</button>
     </nav>
 
-    <div class="playlist-nav">
+    <section class="playlist-nav" aria-label="Çalma listelerim">
       <div class="playlist-nav-head">
-        <span>Çalma Listelerim</span>
-        <button id="newPlaylistBtn" class="playlist-new-btn" title="Yeni çalma listesi">+</button>
+        <span>Çalma listelerim</span>
+        <button id="newPlaylistBtn" class="icon-btn" title="Yeni çalma listesi" aria-label="Yeni çalma listesi">+</button>
       </div>
       <div class="playlist-list" id="playlistList"></div>
-    </div>
+    </section>
 
-    <button class="add-song-btn" id="addSongBtn">+ Şarkı Ekle</button>
+    <section class="import-box" aria-labelledby="importLabel">
+      <label id="importLabel" for="spotifyImportInput">Spotify listesi aktar</label>
+      <p class="import-hint">Çalma listesinin linkini yapıştır. Şarkıları YouTube'da bulup yeni bir listeye ekleriz.</p>
+      <input type="url" id="spotifyImportInput" placeholder="open.spotify.com/playlist/..." autocomplete="off">
+      <button id="spotifyImportBtn" class="btn btn-primary">İçe aktar</button>
+      <div class="import-progress" id="importProgress" aria-hidden="true"><span id="importProgressFill"></span></div>
+      <div id="spotifyImportStatus" class="import-status" role="status" aria-live="polite"></div>
 
-    <div class="api-key-box" id="spotifyKeyBox">
-      <div class="api-key-label-row">
-        <label for="spotifyClientId">Spotify Client ID / Secret</label>
+      <div id="spotifyPasteBox" class="paste-box" hidden>
+        <label for="spotifyPasteInput">Link açılmadı. Şarkıları kendin yapıştır</label>
+        <textarea id="spotifyPasteInput" rows="5" placeholder="Her satıra bir şarkı:&#10;Sanatçı - Şarkı adı"></textarea>
+        <button id="spotifyPasteBtn" class="btn btn-quiet">Listeden aktar</button>
       </div>
-      <input type="text" id="spotifyClientId" placeholder="Client ID">
-      <input type="password" id="spotifyClientSecret" placeholder="Client Secret">
-      <button id="saveSpotifyBtn">Kaydet</button>
-      <p class="api-hint">Spotify çalma listesi içe aktarmak için opsiyonel. developer.spotify.com/dashboard'dan ücretsiz alınır, sadece tarayıcında saklanır.</p>
-    </div>
+    </section>
 
-    <div class="api-key-box">
-      <div class="api-key-label-row">
-        <label for="apiKeyInput">YouTube API Anahtarın</label>
-        <button type="button" id="apiHelpBtn" class="api-help-btn" title="Nasıl alınır?">?</button>
+    <div class="sidebar-foot">
+      <button class="btn btn-quiet btn-wide" id="addSongBtn">Şarkı ekle</button>
+
+      <div class="key-box">
+        <div class="key-head">
+          <label for="apiKeyInput">YouTube API anahtarı</label>
+          <button type="button" id="apiHelpBtn" class="icon-btn" title="Nasıl alınır?" aria-label="API anahtarı nasıl alınır">?</button>
+        </div>
+        <div class="key-row">
+          <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
+          <button id="saveKeyBtn" class="btn btn-quiet">Kaydet</button>
+        </div>
+        <p class="key-hint">Anahtar sadece bu tarayıcıda saklanır.</p>
       </div>
-      <input type="password" id="apiKeyInput" placeholder="AIza...">
-      <button id="saveKeyBtn">Kaydet</button>
-      <p class="api-hint">Anahtarın sadece tarayıcında, yerel olarak saklanır.</p>
     </div>
   </aside>
 
-  <main class="content">
+  <main class="content" id="content">
     <header class="content-header">
       <h1 id="sectionTitle">Hepsi</h1>
-      <button id="refreshBtn" class="refresh-btn" title="Listeyi yenile">Yenile</button>
+      <button id="refreshBtn" class="btn btn-quiet" title="Listeyi yenile">Yenile</button>
     </header>
 
-    <div id="statusBar" class="status-bar"></div>
+    <div id="statusBar" class="status-bar" role="status" aria-live="polite"></div>
 
     <div id="songGrid" class="song-grid"></div>
   </main>
 
 </div>
 
-<!-- Şarkı Ekleme Modalı -->
-<div id="addModal" class="modal hidden">
+<!-- Şarkı ekleme -->
+<div id="addModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
   <div class="modal-box">
-    <h2>Şarkı Ekle</h2>
-    <input type="text" id="addSearchInput" placeholder="YouTube'da ara...">
-    <button id="addSearchBtn">Ara</button>
-    <div id="addResults" class="add-results"></div>
-
-    <div class="spotify-import-row">
-      <input type="text" id="spotifyImportInput" placeholder="Spotify çalma listesi linki (open.spotify.com/playlist/...)">
-      <button id="spotifyImportBtn">İçe Aktar</button>
+    <h2 id="addModalTitle">Şarkı ekle</h2>
+    <div class="modal-row">
+      <input type="text" id="addSearchInput" placeholder="YouTube'da ara" aria-label="YouTube'da ara">
+      <button id="addSearchBtn" class="btn btn-primary">Ara</button>
     </div>
-    <div id="spotifyImportStatus" class="spotify-import-status"></div>
-
-    <button id="closeModalBtn" class="close-modal-btn">Kapat</button>
+    <div id="addResults" class="add-results"></div>
+    <button id="closeModalBtn" class="btn btn-quiet modal-close">Kapat</button>
   </div>
 </div>
 
-<!-- API Anahtarı Nasıl Alınır Modalı -->
-<div id="apiHelpModal" class="modal hidden">
+<!-- API anahtarı nasıl alınır -->
+<div id="apiHelpModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="apiHelpTitle">
   <div class="modal-box api-help-box">
-    <h2>YouTube API Anahtarı Nasıl Alınır?</h2>
+    <h2 id="apiHelpTitle">YouTube API anahtarı nasıl alınır?</h2>
 
     <ol class="api-steps">
       <li>
@@ -100,55 +115,59 @@
       </li>
       <li>
         <strong>Yeni bir proje oluştur.</strong>
-        <p>Üst menüden proje seçiciye tıkla → "Yeni Proje" → bir isim ver (örn. "cinla-app") → Oluştur.</p>
+        <p>Üst menüden proje seçiciye tıkla, "Yeni Proje"yi seç, bir isim ver (örn. "cinla-app") ve Oluştur'a bas.</p>
       </li>
       <li>
         <strong>YouTube Data API v3'ü etkinleştir.</strong>
-        <p>Sol menüden "APIs &amp; Services" → "Library" → arama kutusuna "YouTube Data API v3" yaz → aç → "Enable" butonuna bas.</p>
+        <p>Sol menüden "APIs &amp; Services" ve "Library"yi aç, "YouTube Data API v3" yaz, sonucu aç ve "Enable"a bas.</p>
       </li>
       <li>
         <strong>API anahtarı oluştur.</strong>
-        <p>"APIs &amp; Services" → "Credentials" → üstten "Create Credentials" → "API key" seç. Anahtarın oluşacak ve ekranda görünecek.</p>
+        <p>"APIs &amp; Services" altında "Credentials"a git, "Create Credentials" ve "API key"i seç. Anahtar ekranda görünür.</p>
       </li>
       <li>
-        <strong>(Önerilir) Anahtarı kısıtla.</strong>
-        <p>Güvenlik için anahtarın üstüne tıkla → "API restrictions" kısmından sadece "YouTube Data API v3" ile sınırla. İstersen "Application restrictions" ile de siteni belirtebilirsin.</p>
+        <strong>Anahtarı kısıtla (önerilir).</strong>
+        <p>Anahtara tıkla, "API restrictions" bölümünden sadece "YouTube Data API v3"ü seç. İstersen "Application restrictions" ile siteni de belirtebilirsin.</p>
       </li>
       <li>
-        <strong>Anahtarı kopyala ve buraya yapıştır.</strong>
-        <p>Oluşan <code>AIza...</code> ile başlayan anahtarı kopyala, soldaki "YouTube API Anahtarın" kutusuna yapıştır ve "Kaydet" tuşuna bas. Anahtar sadece kendi tarayıcında (localStorage) saklanır, hiçbir sunucuya gönderilmez.</p>
+        <strong>Anahtarı buraya yapıştır.</strong>
+        <p><code>AIza...</code> ile başlayan anahtarı soldaki "YouTube API anahtarı" kutusuna yapıştırıp Kaydet'e bas. Anahtar sadece bu tarayıcıda (localStorage) saklanır, hiçbir sunucuya gönderilmez.</p>
       </li>
     </ol>
 
     <div class="api-help-note">
-      <strong>Not:</strong> YouTube Data API v3'ün günlük ücretsiz kotası (quota) sınırlıdır. "Yenile" ve arama işlemleri bu kotayı kullanır; kota dolarsa anahtar bir sonraki gün otomatik olarak tekrar çalışır.
+      <strong>Not:</strong> YouTube Data API v3'ün günlük ücretsiz kotası sınırlıdır. Her arama 100 birim harcar ve günlük kota 10.000 birimdir, yani günde yaklaşık 100 arama. Spotify aktarımında her şarkı bir arama sayılır. Kota dolarsa ertesi gün yeniden çalışır.
     </div>
 
-    <button id="closeApiHelpBtn" class="close-modal-btn">Anladım, Kapat</button>
+    <button id="closeApiHelpBtn" class="btn btn-primary modal-close">Anladım</button>
   </div>
 </div>
 
-<!-- Sağ alt mini oynatıcı: player.html'den "Listeye dön" ile gelindiğinde
-     müzik kesilmeden burada devam eder. -->
+<!-- Sağ alt mini oynatıcı: player.html'den "Listeye dön" ile gelince müzik kesilmeden burada devam eder. -->
 <div id="miniPlayer" class="mini-player hidden">
   <a href="#" id="miniInfoLink" class="mini-info-link">
     <img id="miniCover" class="mini-cover" alt="">
     <div class="mini-info">
-      <p id="miniTitle" class="mini-title">—</p>
-      <p id="miniChannel" class="mini-channel">—</p>
+      <p id="miniTitle" class="mini-title">Şarkı</p>
+      <p id="miniChannel" class="mini-channel"></p>
     </div>
   </a>
   <div class="mini-eq" id="miniEq" aria-hidden="true">
     <span></span><span></span><span></span>
   </div>
-  <button id="miniPlayBtn" class="mini-btn" title="Oynat / Duraklat">❚❚</button>
-  <button id="miniCloseBtn" class="mini-btn mini-close" title="Kapat">✕</button>
+  <button id="miniPlayBtn" class="mini-btn" title="Oynat / duraklat" aria-label="Oynat veya duraklat"></button>
+  <button id="miniCloseBtn" class="mini-btn mini-close" title="Kapat" aria-label="Kapat">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
 </div>
 
-<div id="ytMiniHost" style="position:fixed; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;"></div>
+<!-- Gizli YouTube oynatıcısı. 1080p seçilebilsin diye 1px değil, tam boyutlu ama görünmez. -->
+<div class="yt-mini-stage" aria-hidden="true"><div id="ytMiniHost"></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Flip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Flip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 <script src="common.js"></script>
 <script src="seed-songs.js"></script>
 <script src="youtube-player.js"></script>
