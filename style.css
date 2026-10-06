@@ -693,3 +693,76 @@ textarea { resize: vertical; line-height: 1.4; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+
+
+/* ---------- Ayarlar modalı ---------- */
+.settings-box { width: 760px; overflow-y: auto; }
+.settings-section { display: flex; flex-direction: column; gap: 10px; }
+.settings-section h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.settings-hint { font-size: 13px; color: var(--muted); }
+
+.lyrics-style-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+.lyrics-style-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 8px 12px;
+    text-align: left;
+    background: var(--ink);
+    border: 1.5px solid var(--line);
+    border-radius: var(--r-md);
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.lyrics-style-card:hover { border-color: rgba(237, 235, 228, 0.3); transform: translateY(-1px); }
+.lyrics-style-card.selected { border-color: var(--coral); background: var(--ink-3); }
+.lyrics-style-meta { display: flex; flex-direction: column; gap: 2px; padding: 0 4px; }
+.lyrics-style-name { font-size: 14px; font-weight: 700; }
+.lyrics-style-desc { font-size: 12px; color: var(--muted); }
+.lyrics-style-card.selected .lyrics-style-name::after {
+    content: "Seçili";
+    margin-left: 8px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--coral);
+    border-radius: 99px;
+    vertical-align: 1px;
+}
+
+.lyrics-preview {
+    height: 128px;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 0 14px;
+    background: #101010;
+}
+.lyrics-preview-host { height: 100%; }
+.lyrics-preview-classic { background: linear-gradient(160deg, #1b2347, #0c1230); }
+.lyrics-preview-spotify { background: linear-gradient(160deg, #1f5a3a, #0d1f17); }
+.lyrics-preview-apple {
+    background:
+        radial-gradient(120% 90% at 0% 0%, rgba(255, 78, 112, 0.55), transparent 60%),
+        radial-gradient(110% 90% at 100% 100%, rgba(98, 76, 255, 0.55), transparent 60%),
+        #1a1424;
+}
+.lyrics-preview-soundcloud { background: linear-gradient(160deg, #2a2a2a, #111); }
+
+.switch-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.switch-row input { width: 18px; height: 18px; accent-color: var(--coral); cursor: pointer; }
+
+@media (max-width: 640px) {
+    .lyrics-style-grid { grid-template-columns: 1fr; }
+}

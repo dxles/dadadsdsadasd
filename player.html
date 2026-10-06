@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nowtify Player</title>
   <link rel="stylesheet" href="player.css">
+  <link rel="stylesheet" href="lyrics-styles.css">
   <!-- GSAP Animasyon Kütüphanesi -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
@@ -38,11 +39,6 @@
     </div>
   </div>
 
-  <!-- Equalizer -->
-  <div class="equalizer-container" id="equalizer">
-    <span></span><span></span><span></span><span></span><span></span>
-  </div>
-
   <!-- Şarkı Sözleri (Sağ Kayan Alan) -->
   <div class="lyrics-container" id="lyricsContainerOuter">
     <div class="lyrics-status" id="lyricsStatus">Sözler yükleniyor...</div>
@@ -56,12 +52,23 @@
   <div id="ytPlayerHost"></div>
   <div class="video-block-overlay" id="videoBlockOverlay"></div>
 
-  <!-- Çalma Sırası Butonu: equalizer'ın hemen altında. -->
+  <!-- Alt sol butonlar: Çalma sırası + Söz stili -->
   <div class="action-row">
     <button id="queueToggleBtn" class="corner-btn" title="Çalma sırası">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
       <span>Sıra</span>
     </button>
+    <button id="lyricsStyleBtn" class="corner-btn" title="Şarkı sözü stili" aria-haspopup="true" aria-expanded="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
+      <span>Sözler</span>
+    </button>
+  </div>
+
+  <!-- Söz stili menüsü -->
+  <div class="lyrics-style-menu" id="lyricsStyleMenu" role="menu" hidden>
+    <div class="lsm-title">Söz stili</div>
+    <div class="lsm-options" id="lyricsStyleOptions"></div>
+    <div class="lsm-source" id="lyricsSourceInfo"></div>
   </div>
 
   <!-- Çalma Sırası Paneli -->
@@ -115,6 +122,9 @@
 
   <!-- Ortak depolama/yardımcı fonksiyonlar -->
   <script src="common.js"></script>
+  <!-- Şarkı sözü sağlayıcıları (LRCLIB + Musixmatch) ve görünümleri -->
+  <script src="lyrics-providers.js"></script>
+  <script src="lyrics-styles.js"></script>
   <!-- YouTube Player Yükleyici Scripti -->
   <script src="youtube-player.js"></script>
   <!-- Ana JavaScript Dosyamız -->

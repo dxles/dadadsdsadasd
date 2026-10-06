@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="lyrics-styles.css">
 </head>
 <body>
 
@@ -62,6 +63,7 @@
 
     <div class="sidebar-foot">
       <button class="btn btn-quiet btn-wide" id="addSongBtn">Şarkı ekle</button>
+      <button class="btn btn-quiet btn-wide" id="settingsBtn">Ayarlar</button>
 
       <div class="key-box">
         <div class="key-head">
@@ -100,6 +102,30 @@
     </div>
     <div id="addResults" class="add-results"></div>
     <button id="closeModalBtn" class="btn btn-quiet modal-close">Kapat</button>
+  </div>
+</div>
+
+<!-- Ayarlar: şarkı sözü animasyonu + kaynaklar -->
+<div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="modal-box settings-box">
+    <h2 id="settingsTitle">Ayarlar</h2>
+
+    <section class="settings-section">
+      <h3>Şarkı sözü animasyonu</h3>
+      <p class="settings-hint">Çalarken görünen sözlerin stilini seç. Önizlemeler canlı oynar, seçim hemen kaydedilir.</p>
+      <div class="lyrics-style-grid" id="lyricsStyleGrid" role="radiogroup" aria-label="Şarkı sözü animasyonu"></div>
+    </section>
+
+    <section class="settings-section">
+      <h3>Şarkı sözü kaynakları</h3>
+      <p class="settings-hint">Önce LRCLIB aranır. Zaman damgalı söz bulunamazsa Musixmatch denenir.</p>
+      <label class="switch-row" for="fallbackToggle">
+        <input type="checkbox" id="fallbackToggle">
+        <span>Musixmatch'i yedek kaynak olarak kullan</span>
+      </label>
+    </section>
+
+    <button id="closeSettingsBtn" class="btn btn-primary modal-close">Kapat</button>
   </div>
 </div>
 
@@ -169,6 +195,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 <script src="common.js"></script>
+<script src="lyrics-styles.js"></script>
 <script src="seed-songs.js"></script>
 <script src="youtube-player.js"></script>
 <script src="app.js"></script>

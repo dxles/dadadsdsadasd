@@ -7,6 +7,8 @@ const STORAGE_KEYS = {
   queueMeta: "cinla_queue_meta",
   playlists: "cinla_playlists",
   nowPlaying: "cinla_now_playing",
+  lyricsStyle: "cinla_lyrics_style",
+  lyricsFallback: "cinla_lyrics_fallback",
 };
 
 function escapeHtml(str) {
@@ -163,4 +165,67 @@ function cleanTitleForSearch(title) {
     .replace(/official.*video/gi, "")
     .replace(/lyrics?/gi, "")
     .trim();
+}
+
+// ---- Şarkı sözü ayarları (index.html > Ayarlar, player.html okur) ----
+const LYRICS_STYLES = [
+  { id: "classic",    name: "Klasik",      desc: "Tek satır, yumuşak kayarak geçiş" },
+  { id: "spotify",    name: "Spotify",     desc: "Tüm sözler akar, aktif satır parlar" },
+  { id: "apple",      name: "Apple Music", desc: "Bulanık satırlar, yaylanan geçiş" },
+  { id: "soundcloud", name: "SoundCloud",  desc: "Turuncu, kelime kelime dolan satır" },
+];
+
+function getLyricsStyle() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEYS.lyricsStyle);
+    return LYRICS_STYLES.some(s => s.id === v) ? v : "classic";
+  } catch {
+    return "classic";
+  }
+}
+
+function setLyricsStyle(id) {
+  try { localStorage.setItem(STORAGE_KEYS.lyricsStyle, id); } catch { /* sessiz geç */ }
+}
+
+// Musixmatch yedek sağlayıcısı (LRCLIB bulamazsa denenir). Varsayılan: açık.
+function getLyricsFallbackEnabled() {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.lyricsFallback) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+function setLyricsFallbackEnabled(on) {
+  try { localStorage.setItem(STORAGE_KEYS.lyricsFallback, on ? "on" : "off"); } catch { /* sessiz geç */ }
+}
+
+// ---- Şarkı bilgisini id'den bul (URL'de başlık/kanal taşımamak için) ----
+function findSongMeta(id) {
+  if (!id) return null;
+  const pools = [];
+  try { pools.push(getQueue()); } catch { /* sessiz geç */ }
+  try { pools.push(getUserSongs()); } catch { /* sessiz geç */ }
+  try { pools.push(getCachedSongs() || []); } catch { /* sessiz geç */ }
+  try { getPlaylists().forEach(p => pools.push(p.songs || [])); } catch { /* sessiz geç */ }
+  try { const np = readNowPlaying(); if (np) pools.push([np]); } catch { /* sessiz geç */ }
+  for (const pool of pools) {
+    const hit = Array.isArray(pool) && pool.find(s => s && s.id === id && s.title);
+    if (hit) return { title: hit.title, channel: hit.channel || "" };
+  }
+  return null;
+}
+
+// Yerelde yoksa (ör. link başka cihazda açıldıysa) YouTube oEmbed'den çek
+async function fetchSongMetaOnline(id) {
+  try {
+    const url = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d && d.title ? { title: d.title, channel: d.author_name || "" } : null;
+  } catch {
+    return null;
+  }
 }

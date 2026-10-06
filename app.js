@@ -79,7 +79,7 @@ function initMiniPlayer() {
   miniCover.src = `https://i.ytimg.com/vi/${np.id}/mqdefault.jpg`;
   miniTitle.textContent = np.title || "Bilinmeyen şarkı";
   miniChannel.textContent = np.channel || "";
-  miniInfoLink.href = `player.html?v=${encodeURIComponent(np.id)}&t=${encodeURIComponent(np.title || "")}&c=${encodeURIComponent(np.channel || "")}`;
+  miniInfoLink.href = `player.html?v=${encodeURIComponent(np.id)}`;
 
   miniPlayer.classList.remove("hidden");
   requestAnimationFrame(() => miniPlayer.classList.add("visible"));
@@ -342,6 +342,110 @@ function init() {
   closeApiHelpBtn.addEventListener("click", closeApiHelp);
   apiHelpModal.addEventListener("click", e => { if (e.target === apiHelpModal) closeApiHelp(); });
 
+  // ---- Ayarlar: şarkı sözü animasyonu seçimi + canlı önizleme ----
+  const settingsBtn = document.getElementById("settingsBtn");
+  const settingsModal = document.getElementById("settingsModal");
+  const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+  const lyricsStyleGrid = document.getElementById("lyricsStyleGrid");
+  const fallbackToggle = document.getElementById("fallbackToggle");
+
+  // Önizleme için örnek (telifsiz, bize ait) sözler
+  const PREVIEW_LINES = [
+    { time: 0,    text: "Gece uzar, yollar sonsuz" },
+    { time: 2.6,  text: "Şehir uyur, sen uyanık" },
+    { time: 5.2,  text: "" },
+    { time: 7.2,  text: "Bir şarkı çal, dön geriye" },
+    { time: 9.8,  text: "Yıldızlar bizi bilir" },
+    { time: 12.4, text: "Çınla, çınla, hiç susma" },
+    { time: 15,   text: "Sesin bende kalır" },
+  ];
+  const PREVIEW_LOOP = 18;
+  let previewRenderers = [];
+  let previewTimer = null;
+
+  function renderLyricsStyleCards() {
+    const active = getLyricsStyle();
+    lyricsStyleGrid.innerHTML = "";
+    previewRenderers = [];
+    LYRICS_STYLES.forEach(st => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "lyrics-style-card" + (st.id === active ? " selected" : "");
+      card.dataset.style = st.id;
+      card.setAttribute("role", "radio");
+      card.setAttribute("aria-checked", st.id === active ? "true" : "false");
+      card.innerHTML = `
+        <div class="lyrics-preview lyrics-preview-${st.id}"><div class="lyrics-preview-host"></div></div>
+        <div class="lyrics-style-meta">
+          <span class="lyrics-style-name">${escapeHtml(st.name)}</span>
+          <span class="lyrics-style-desc">${escapeHtml(st.desc)}</span>
+        </div>`;
+      card.addEventListener("click", () => {
+        setLyricsStyle(st.id);
+        lyricsStyleGrid.querySelectorAll(".lyrics-style-card").forEach(c => {
+          const on = c === card;
+          c.classList.toggle("selected", on);
+          c.setAttribute("aria-checked", on ? "true" : "false");
+        });
+      });
+      lyricsStyleGrid.appendChild(card);
+
+      const r = new LyricsRenderer(card.querySelector(".lyrics-preview-host"), { style: st.id, compact: true });
+      r.setLines(PREVIEW_LINES);
+      previewRenderers.push(r);
+    });
+  }
+
+  function startPreviewClock() {
+    stopPreviewClock();
+    const t0 = performance.now();
+    const tick = () => {
+      const t = ((performance.now() - t0) / 1000) % PREVIEW_LOOP;
+      previewRenderers.forEach(r => r.update(t));
+    };
+    tick();
+    previewTimer = setInterval(tick, 120);
+  }
+
+  function stopPreviewClock() {
+    clearInterval(previewTimer);
+    previewTimer = null;
+  }
+
+  function openSettings() {
+    fallbackToggle.checked = getLyricsFallbackEnabled();
+    settingsModal.classList.remove("hidden");
+    renderLyricsStyleCards();
+    startPreviewClock();
+    if (motionOK()) {
+      gsap.fromTo(settingsModal, { opacity: 0 }, { opacity: 1, duration: 0.2 });
+      gsap.fromTo(settingsModal.querySelector(".modal-box"), { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" });
+    }
+  }
+
+  function closeSettings() {
+    stopPreviewClock();
+    const finish = () => {
+      settingsModal.classList.add("hidden");
+      previewRenderers.forEach(r => r.destroy());
+      previewRenderers = [];
+    };
+    if (motionOK()) {
+      gsap.to(settingsModal.querySelector(".modal-box"), { opacity: 0, y: 8, scale: 0.97, duration: 0.2, ease: "power1.in" });
+      gsap.to(settingsModal, { opacity: 0, duration: 0.2, onComplete: finish });
+    } else {
+      finish();
+    }
+  }
+
+  settingsBtn.addEventListener("click", openSettings);
+  closeSettingsBtn.addEventListener("click", closeSettings);
+  settingsModal.addEventListener("click", e => { if (e.target === settingsModal) closeSettings(); });
+  fallbackToggle.addEventListener("change", () => setLyricsFallbackEnabled(fallbackToggle.checked));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeSettings();
+  });
+
   // İlk ziyarette anahtar yoksa yardım modalını otomatik göster
   if (!getApiKey()) {
     openApiHelp();
@@ -494,7 +598,7 @@ function renderGrid(list) {
     seenIds.add(song.id);
     const thumb = `https://i.ytimg.com/vi/${song.id}/mqdefault.jpg`;
     card.innerHTML = `
-      <a class="song-card-link" href="player.html?v=${encodeURIComponent(song.id)}&t=${encodeURIComponent(song.title)}&c=${encodeURIComponent(song.channel || "")}">
+      <a class="song-card-link" href="player.html?v=${encodeURIComponent(song.id)}">
         <div class="track-thumb">
           <img src="${thumb}" alt="" loading="lazy">
           <div class="track-play" aria-hidden="true"><span>${PLAY_GLYPH}</span></div>

@@ -193,33 +193,6 @@ input { font-family: inherit; }
     font-variant-numeric: tabular-nums;
 }
 
-/* ================= Eşitleyici ================= */
-.equalizer-container {
-    position: fixed;
-    left: 60px;
-    bottom: 110px;
-    z-index: 4;
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-    height: 34px;
-    opacity: 0.35;
-    transition: opacity 0.4s ease;
-}
-
-.equalizer-container.playing {
-    opacity: 1;
-}
-
-.equalizer-container span {
-    display: block;
-    width: 4px;
-    height: 6px;
-    background: var(--spotify-green);
-    border-radius: 2px;
-    transform-origin: bottom center;
-}
-
 /* ================= Şarkı sözleri ================= */
 .lyrics-container {
     position: fixed;
@@ -258,6 +231,17 @@ input { font-family: inherit; }
     letter-spacing: -0.01em;
     will-change: transform, opacity;
 }
+
+/* Liste tabanlı görünümler (Spotify / Apple Music / SoundCloud): daha geniş,
+   tam yükseklikte, üstten/alttan solan alan. Satır konumu JS ile ayarlanır. */
+.lyrics-container.lyrics-list-mode {
+    width: 480px;
+    max-width: 42vw;
+    padding: 0 32px 0 28px;
+    align-items: stretch;
+    text-align: left;
+}
+.lyrics-container.lyrics-list-mode #lyricsContent { height: 100%; }
 
 /* Düz (senkronsuz) sözler: zaman bilgisi olmadığı için tek satır
    halinde gösterilemiyor, akan/kaydırılabilir küçük bir liste olarak
@@ -344,7 +328,7 @@ input { font-family: inherit; }
 
 .corner-btn:hover { background: rgba(255,255,255,0.16); }
 
-/* Sıra butonu: equalizer'ın hemen altında */
+/* Alt sol butonlar */
 .action-row {
     position: fixed;
     left: 60px;
@@ -588,7 +572,6 @@ body.hud-hidden .controls {
     .lyrics-container { display: none; }
     .now-row { flex-direction: column; text-align: center; gap: 20px; }
     .cover-wrap { width: 220px; height: 220px; }
-    .equalizer-container { left: 24px; bottom: 96px; }
 }
 
 @media (max-width: 560px) {
@@ -597,3 +580,59 @@ body.hud-hidden .controls {
     .queue-panel { width: 100%; }
     .action-row { left: 24px; bottom: 96px; }
 }
+
+
+/* ================= Söz stili menüsü ================= */
+.lyrics-style-menu {
+    position: fixed;
+    left: 60px;
+    bottom: 104px;
+    z-index: 61;
+    width: 250px;
+    padding: 12px;
+    background: rgba(18,18,18,0.94);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.lyrics-style-menu[hidden] { display: none; }
+.lsm-title {
+    padding: 2px 8px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+.lsm-options { display: flex; flex-direction: column; gap: 2px; }
+.lsm-opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 10px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.15s ease;
+}
+.lsm-opt:hover { background: rgba(255,255,255,0.08); }
+.lsm-opt small { display: block; margin-top: 1px; font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+.lsm-opt .lsm-check { opacity: 0; color: var(--spotify-green); font-weight: 800; }
+.lsm-opt.selected { background: rgba(255,255,255,0.1); }
+.lsm-opt.selected .lsm-check { opacity: 1; }
+.lsm-source {
+    margin-top: 8px;
+    padding: 8px 8px 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+.lsm-source:empty { display: none; }
+@media (max-width: 560px) { .lyrics-style-menu { left: 24px; bottom: 148px; } }
