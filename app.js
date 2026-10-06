@@ -347,7 +347,6 @@ function init() {
   const settingsModal = document.getElementById("settingsModal");
   const closeSettingsBtn = document.getElementById("closeSettingsBtn");
   const lyricsStyleGrid = document.getElementById("lyricsStyleGrid");
-  const fallbackToggle = document.getElementById("fallbackToggle");
 
   // Önizleme için örnek (telifsiz, bize ait) sözler
   const PREVIEW_LINES = [
@@ -396,6 +395,53 @@ function init() {
     });
   }
 
+  // Kaynak listesi: sıra (▲▼) + aç/kapa
+  const providerListEl = document.getElementById("providerList");
+  function renderProviderList() {
+    const cfg = getLyricsProviderConfig();
+    providerListEl.innerHTML = "";
+    cfg.order.forEach((id, i) => {
+      const meta = LYRICS_PROVIDER_META.find(p => p.id === id);
+      if (!meta) return;
+      const on = !cfg.off.includes(id);
+      const row = document.createElement("div");
+      row.className = "provider-row" + (on ? "" : " is-off");
+      row.innerHTML = `
+        <div class="provider-move">
+          <button type="button" class="icon-btn" data-dir="-1" aria-label="Yukarı taşı" ${i === 0 ? "disabled" : ""}>▲</button>
+          <button type="button" class="icon-btn" data-dir="1" aria-label="Aşağı taşı" ${i === cfg.order.length - 1 ? "disabled" : ""}>▼</button>
+        </div>
+        <label class="provider-main">
+          <input type="checkbox" class="provider-toggle" ${on ? "checked" : ""}>
+          <span class="provider-switch" aria-hidden="true"></span>
+          <span class="provider-text">
+            <span class="provider-name">${escapeHtml(meta.name)}</span>
+            <span class="provider-desc">${escapeHtml(meta.desc)}</span>
+          </span>
+        </label>
+        <span class="provider-pos">${i + 1}</span>`;
+      row.querySelector(".provider-toggle").addEventListener("change", e => {
+        const c = getLyricsProviderConfig();
+        c.off = c.off.filter(x => x !== id);
+        if (!e.target.checked) c.off.push(id);
+        saveLyricsProviderConfig(c);
+        renderProviderList();
+      });
+      row.querySelectorAll(".provider-move .icon-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const c = getLyricsProviderConfig();
+          const from = c.order.indexOf(id);
+          const to = from + Number(btn.dataset.dir);
+          if (to < 0 || to >= c.order.length) return;
+          c.order.splice(to, 0, c.order.splice(from, 1)[0]);
+          saveLyricsProviderConfig(c);
+          renderProviderList();
+        });
+      });
+      providerListEl.appendChild(row);
+    });
+  }
+
   function startPreviewClock() {
     stopPreviewClock();
     const t0 = performance.now();
@@ -413,7 +459,7 @@ function init() {
   }
 
   function openSettings() {
-    fallbackToggle.checked = getLyricsFallbackEnabled();
+    renderProviderList();
     settingsModal.classList.remove("hidden");
     renderLyricsStyleCards();
     startPreviewClock();
@@ -441,7 +487,6 @@ function init() {
   settingsBtn.addEventListener("click", openSettings);
   closeSettingsBtn.addEventListener("click", closeSettings);
   settingsModal.addEventListener("click", e => { if (e.target === settingsModal) closeSettings(); });
-  fallbackToggle.addEventListener("change", () => setLyricsFallbackEnabled(fallbackToggle.checked));
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeSettings();
   });

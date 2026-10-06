@@ -118,11 +118,8 @@
 
     <section class="settings-section">
       <h3>Şarkı sözü kaynakları</h3>
-      <p class="settings-hint">Önce LRCLIB aranır. Zaman damgalı söz bulunamazsa Musixmatch denenir.</p>
-      <label class="switch-row" for="fallbackToggle">
-        <input type="checkbox" id="fallbackToggle">
-        <span>Musixmatch'i yedek kaynak olarak kullan</span>
-      </label>
+      <p class="settings-hint">Yukarıdan aşağıya sırayla aranır, ilk bulunan senkron söz kullanılır. Okları kullanarak sırayı değiştir, anahtarla kaynağı aç veya kapat.</p>
+      <div class="provider-list" id="providerList"></div>
     </section>
 
     <button id="closeSettingsBtn" class="btn btn-primary modal-close">Kapat</button>

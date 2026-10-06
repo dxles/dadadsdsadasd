@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   nowPlaying: "cinla_now_playing",
   lyricsStyle: "cinla_lyrics_style",
   lyricsFallback: "cinla_lyrics_fallback",
+  lyricsProviders: "cinla_lyrics_providers",
 };
 
 function escapeHtml(str) {
@@ -188,17 +189,47 @@ function setLyricsStyle(id) {
   try { localStorage.setItem(STORAGE_KEYS.lyricsStyle, id); } catch { /* sessiz geç */ }
 }
 
-// Musixmatch yedek sağlayıcısı (LRCLIB bulamazsa denenir). Varsayılan: açık.
-function getLyricsFallbackEnabled() {
-  try {
-    return localStorage.getItem(STORAGE_KEYS.lyricsFallback) !== "off";
-  } catch {
-    return true;
+// ---- Şarkı sözü sağlayıcıları: sıra + aç/kapa (index.html > Ayarlar) ----
+// Sıra, aramanın hangi sırayla yapılacağını belirler. İlk senkron sonuç kazanır.
+const LYRICS_PROVIDER_META = [
+  { id: "lrclib",       name: "LRCLIB",               desc: "Geniş katalog, satır senkronlu", defaultOn: true },
+  { id: "unison",       name: "Better Lyrics Unison", desc: "Topluluk kaynaklı, YouTube video ID ile eşleşir", defaultOn: true },
+  { id: "binilyrics",   name: "BiniLyrics",           desc: "Kelime senkronlu, 1 milyondan fazla dosya", defaultOn: true },
+  { id: "musixmatch",   name: "Musixmatch",           desc: "Paxsenix köprüsü üzerinden", defaultOn: true },
+  { id: "betterlyrics", name: "Better Lyrics API",    desc: "Sadece önbellekteki şarkılar, albüm bilgisi gerekir (nadir bulur)", defaultOn: false },
+];
+
+function getLyricsProviderConfig() {
+  const ids = LYRICS_PROVIDER_META.map(p => p.id);
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.lyricsProviders) || "null"); } catch { /* sessiz geç */ }
+
+  let order, off;
+  if (saved && Array.isArray(saved.order)) {
+    order = saved.order.filter(id => ids.includes(id));
+    ids.forEach(id => { if (!order.includes(id)) order.push(id); }); // sonradan eklenen sağlayıcılar sona
+    off = new Set(Array.isArray(saved.off) ? saved.off : []);
+    // Kaydedilmiş ayarda hiç görülmemiş yeni sağlayıcı: varsayılanını uygula
+    ids.forEach(id => {
+      if (!saved.order.includes(id) && !LYRICS_PROVIDER_META.find(p => p.id === id).defaultOn) off.add(id);
+    });
+  } else {
+    order = ids.slice();
+    off = new Set(LYRICS_PROVIDER_META.filter(p => !p.defaultOn).map(p => p.id));
+    // Eski "Musixmatch yedek" anahtarı kapalıysa onu koru
+    try { if (localStorage.getItem(STORAGE_KEYS.lyricsFallback) === "off") off.add("musixmatch"); } catch { /* sessiz geç */ }
   }
+  return { order, off: [...off] };
 }
 
-function setLyricsFallbackEnabled(on) {
-  try { localStorage.setItem(STORAGE_KEYS.lyricsFallback, on ? "on" : "off"); } catch { /* sessiz geç */ }
+function saveLyricsProviderConfig(cfg) {
+  try { localStorage.setItem(STORAGE_KEYS.lyricsProviders, JSON.stringify({ order: cfg.order, off: cfg.off })); } catch { /* sessiz geç */ }
+}
+
+// Sırayla, sadece açık olanlar
+function getEnabledLyricsProviders() {
+  const cfg = getLyricsProviderConfig();
+  return cfg.order.filter(id => !cfg.off.includes(id));
 }
 
 // ---- Şarkı bilgisini id'den bul (URL'de başlık/kanal taşımamak için) ----

@@ -385,7 +385,48 @@ function updateActiveLyricLine(currentTime) {
   lyricsRenderer.update(currentTime);
 }
 
-// Sağlayıcı sırası: LRCLIB -> Musixmatch -> düz metin (LRCLIB düz / lyrics.ovh)
+// Sağlayıcılar Ayarlar'daki sıraya göre sırayla denenir (açık olanlar). İlk senkron sonuç kazanır.
+// Hiçbiri senkron bulamazsa ilk bulunan düz metin, o da yoksa lyrics.ovh denenir.
+const PROVIDER_NAMES = Object.fromEntries(LYRICS_PROVIDER_META.map(p => [p.id, p.name]));
+
+function currentDuration() {
+  return ytPlayer && ytPlayer.getDuration ? (ytPlayer.getDuration() || 0) : 0;
+}
+
+// Her sağlayıcı { synced, plain } döner. Adaylar (sanatçı/şarkı tahminleri) en olasıdan genele sıralı.
+async function runLyricsProvider(id, candidates, track) {
+  const empty = { synced: null, plain: null };
+  const dur = currentDuration();
+
+  if (id === "lrclib") {
+    let plain = null;
+    for (const { artist, title } of candidates) {
+      const r = await fetchLrclib(artist, title);
+      if (r.synced) return r;
+      if (r.plain && !plain) plain = r.plain;
+    }
+    return { synced: null, plain };
+  }
+
+  if (id === "unison") {
+    const first = candidates[0];
+    return fetchFromUnison(track.id, first.artist, first.title, dur);
+  }
+
+  // Diğerleri: ilk 3 adayı sırayla dene
+  for (const { artist, title } of candidates.slice(0, 3)) {
+    let r = empty;
+    if (id === "binilyrics") r = await fetchFromBiniLyrics(artist, title, dur);
+    else if (id === "betterlyrics") r = await fetchFromBetterLyricsApi(artist, title, dur);
+    else if (id === "musixmatch") {
+      const synced = await fetchFromMusixmatch(artist, title, dur);
+      r = { synced, plain: null };
+    }
+    if (r.synced) return r;
+  }
+  return empty;
+}
+
 async function loadLyrics(track) {
   const myId = ++lyricsLoadId;
   const stale = () => myId !== lyricsLoadId;
@@ -396,34 +437,20 @@ async function loadLyrics(track) {
     setLyricsStatus("Bu şarkı için söz bulunamadı.");
     return;
   }
-  setLyricsStatus("Sözler yükleniyor...");
 
-  // 1) LRCLIB: senkron bulursak hemen kullan, düz metni yedek olarak sakla
-  let lrclibPlain = null;
-  for (const { artist, title } of candidates) {
+  let firstPlain = null; // { text, source }
+  for (const id of getEnabledLyricsProviders()) {
+    setLyricsStatus(`${PROVIDER_NAMES[id] || id} aranıyor...`);
     try {
-      const r = await fetchLrclib(artist, title);
+      const r = await runLyricsProvider(id, candidates, track);
       if (stale()) return;
-      if (r.synced) { renderSyncedLyrics(r.synced, "LRCLIB"); return; }
-      if (r.plain && !lrclibPlain) lrclibPlain = r.plain;
+      if (r.synced) { renderSyncedLyrics(r.synced, PROVIDER_NAMES[id] || id); return; }
+      if (r.plain && !firstPlain) firstPlain = { text: r.plain, source: PROVIDER_NAMES[id] || id };
     } catch { /* sessiz geç */ }
   }
 
-  // 2) Musixmatch: LRCLIB senkron söz bulamadıysa dene (ayarlardan kapatılabilir)
-  if (getLyricsFallbackEnabled()) {
-    setLyricsStatus("Musixmatch'te aranıyor...");
-    for (const { artist, title } of candidates.slice(0, 3)) {
-      try {
-        const dur = ytPlayer && ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
-        const synced = await fetchFromMusixmatch(artist, title, dur);
-        if (stale()) return;
-        if (synced) { renderSyncedLyrics(synced, "Musixmatch"); return; }
-      } catch { /* sessiz geç */ }
-    }
-  }
-
-  // 3) Senkron yok: düz metin
-  if (lrclibPlain) { renderPlainLyrics(lrclibPlain, "LRCLIB"); return; }
+  // Senkron yok: düz metin
+  if (firstPlain) { renderPlainLyrics(firstPlain.text, firstPlain.source); return; }
   setLyricsStatus("Sözler aranıyor...");
   for (const { artist, title } of candidates) {
     try {
