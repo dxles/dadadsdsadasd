@@ -260,3 +260,25 @@ async function fetchSongMetaOnline(id) {
     return null;
   }
 }
+
+// ---- YouTube linkinden video ID çıkar (watch, youtu.be, shorts, embed, live, music.youtube.com) ----
+// Çıplak 11 karakterlik ID kabul edilmez: "Mockingbird" gibi 11 harfli arama kelimeleriyle karışır.
+function extractYouTubeId(text) {
+  const t = (text || "").trim();
+  if (!t || /\s/.test(t)) return null;
+  let url;
+  try { url = new URL(/^https?:\/\//i.test(t) ? t : "https://" + t); } catch { return null; }
+  const host = url.hostname.replace(/^(www|m|music)\./, "");
+  const ID = /^[\w-]{11}$/;
+  if (host === "youtu.be") {
+    const id = url.pathname.slice(1).split("/")[0];
+    return ID.test(id) ? id : null;
+  }
+  if (host === "youtube.com" || host === "youtube-nocookie.com") {
+    const v = url.searchParams.get("v");
+    if (v && ID.test(v)) return v;
+    const m = url.pathname.match(/^\/(?:shorts|embed|live|v)\/([\w-]{11})/);
+    if (m) return m[1];
+  }
+  return null;
+}

@@ -29,6 +29,7 @@
         <div class="track-channel" id="trackChannel">Sanatçı</div>
         <div class="player-status" id="playerStatus"></div>
         <div class="progress-area">
+          <div class="wave" id="waveBars" aria-hidden="true"></div>
           <input type="range" id="seekBar" value="0" min="0" max="100">
           <div class="time-row">
             <span id="curTime">0:00</span>
@@ -58,15 +59,15 @@
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
       <span>Sıra</span>
     </button>
-    <button id="lyricsStyleBtn" class="corner-btn" title="Şarkı sözü stili" aria-haspopup="true" aria-expanded="false">
+    <button id="lyricsStyleBtn" class="corner-btn" title="Oynatıcı ve söz stili" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
-      <span>Sözler</span>
+      <span>Stil</span>
     </button>
   </div>
 
   <!-- Söz stili menüsü -->
   <div class="lyrics-style-menu" id="lyricsStyleMenu" role="menu" hidden>
-    <div class="lsm-title">Söz stili</div>
+    <div class="lsm-title">Oynatıcı ve söz stili</div>
     <div class="lsm-options" id="lyricsStyleOptions"></div>
     <div class="lsm-source" id="lyricsSourceInfo"></div>
   </div>

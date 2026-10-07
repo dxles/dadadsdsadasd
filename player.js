@@ -121,8 +121,46 @@ let lyricsLoadId = 0;    // şarkı hızlı değişirse eski isteğin sonucunu �
 let lyricsSourceName = "";
 let lyricsRenderer = null; // LyricsRenderer (senkron sözler için)
 
+// ================= İlerleme dolgusu + SoundCloud dalga çubuğu =================
+const progressArea = document.querySelector(".progress-area");
+const waveBars = document.getElementById("waveBars");
+
+function setProgressFill(cur, dur) {
+  const pct = dur > 0 ? Math.min(100, Math.max(0, (cur / dur) * 100)) : 0;
+  progressArea.style.setProperty("--p", pct.toFixed(2) + "%");
+}
+
+// Video kimliğinden tohumlanan sahte dalga formu (her şarkıda aynı, şarkılar arasında farklı)
+function buildWave(seedStr) {
+  let h = 2166136261;
+  for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const rand = () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const N = 125;
+  let prev = 0.5;
+  let rects = "";
+  for (let i = 0; i < N; i++) {
+    const v = 0.55 * rand() + 0.45 * prev;
+    prev = v;
+    const hgt = 14 + v * 56;                // üst bölüm (0-70)
+    const x = i * 8;
+    rects += `<rect x="${x}" y="${(70 - hgt).toFixed(1)}" width="5" height="${hgt.toFixed(1)}" rx="1.5"/>`;
+    rects += `<rect x="${x}" y="72" width="5" height="${(hgt * 0.4).toFixed(1)}" rx="1.5" fill-opacity="0.45"/>`; // yansıma
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none">${rects}</svg>`;
+  const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  waveBars.style.webkitMaskImage = url;
+  waveBars.style.maskImage = url;
+}
+
+// Seçili stil oynatıcı düzenini de belirler (CSS: body[data-layout=...])
+function applyLayout() {
+  document.body.dataset.layout = getLyricsStyle();
+}
+applyLayout();
+
 // ================= Kapak / Başlık =================
 function applyTrackMeta(track) {
+  buildWave(track.id || "x");
   const cover = `https://i.ytimg.com/vi/${track.id}/hqdefault.jpg`;
   coverImg.src = cover;
   trackTitle.textContent = track.title;
@@ -197,6 +235,7 @@ function updateProgress() {
   }
   seekBar.value = String(cur);
   curTimeEl.textContent = formatTime(cur);
+  setProgressFill(cur, dur);
   updateActiveLyricLine(cur);
 
   // Mini oynatıcı ile devam edebilmek için ilerlemeyi kaydet
@@ -236,6 +275,7 @@ function goToTrack(song) {
 
   seekBar.value = "0";
   seekBar.max = "100";
+  setProgressFill(0, 0);
   curTimeEl.textContent = "0:00";
   durTimeEl.textContent = "0:00";
 
@@ -470,6 +510,7 @@ const lyricsStyleOptions = document.getElementById("lyricsStyleOptions");
 
 function applyLyricsStyle(id) {
   setLyricsStyle(id);
+  applyLayout();
   renderLyricsStyleMenu();
   // Senkron söz varsa yeni stille baştan çiz (aynı sözler, aynı an)
   if (syncedLyrics) renderSyncedLyrics(syncedLyrics, lyricsSourceName);
@@ -607,6 +648,7 @@ function init() {
   seekBar.addEventListener("input", () => {
     isSeeking = true;
     curTimeEl.textContent = formatTime(Number(seekBar.value));
+    setProgressFill(Number(seekBar.value), Number(seekBar.max));
   });
   seekBar.addEventListener("change", commitSeek);
   seekBar.addEventListener("pointerup", commitSeek);

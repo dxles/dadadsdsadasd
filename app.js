@@ -677,6 +677,13 @@ function renderGrid(list) {
 
 // ---- Site içi arama (mevcut listede) ----
 function doSiteSearch() {
+  // Üstteki arama kutusuna link yapıştırılırsa "Şarkı ekle" penceresinde aç
+  if (extractYouTubeId(searchInput.value)) {
+    addSongBtn.click();
+    addSearchInput.value = searchInput.value.trim();
+    doAddSearch();
+    return;
+  }
   const q = searchInput.value.trim().toLowerCase();
   if (!q) { renderGrid(); return; }
   const userSongs = getUserSongs();
@@ -747,10 +754,57 @@ async function refreshFromYouTube() {
 }
 
 // ---- Şarkı ekleme modalı: YouTube araması ----
+// Yapıştırılan YouTube linkinden videoyu bul (API anahtarı varsa YouTube'dan, yoksa oEmbed'den)
+async function showLinkResult(id) {
+  addResults.innerHTML = `<p class="note">Link çözülüyor...</p>`;
+  let meta = null;
+  const key = getApiKey();
+  if (key) {
+    try {
+      const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(id)}&key=${key}`);
+      if (res.ok) {
+        const data = await res.json();
+        const sn = data.items && data.items[0] && data.items[0].snippet;
+        if (sn) meta = { title: decodeHtmlEntities(sn.title), channel: decodeHtmlEntities(sn.channelTitle) };
+      }
+    } catch { /* oEmbed'e düş */ }
+  }
+  if (!meta) meta = await fetchSongMetaOnline(id);
+  if (!meta) {
+    addResults.innerHTML = `<p class="note">Bu linkteki video bulunamadı ya da gömülü oynatmaya kapalı olabilir.</p>`;
+    return;
+  }
+
+  const { title, channel } = meta;
+  const row = document.createElement("div");
+  row.className = "add-result-item";
+  row.innerHTML = `
+    <img src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/default.jpg" alt="">
+    <div class="info">
+      <p>${escapeHtml(title)}</p>
+      <p class="sub">${escapeHtml(channel)}</p>
+    </div>
+    <a class="btn btn-quiet btn-small" href="player.html?v=${encodeURIComponent(id)}&t=${encodeURIComponent(title)}&c=${encodeURIComponent(channel)}">Çal</a>
+    <button class="btn btn-primary btn-small">Ekle</button>
+  `;
+  row.querySelector("button").addEventListener("click", e => {
+    saveUserSong({ id, title, channel, genre: "benim" });
+    e.currentTarget.textContent = "Eklendi";
+    e.currentTarget.disabled = true;
+    if (currentGenre === "benim" || currentGenre === "hepsi") renderGrid();
+  });
+  addResults.innerHTML = "";
+  addResults.appendChild(row);
+}
+
 async function doAddSearch() {
   const key = getApiKey();
   const q = addSearchInput.value.trim();
   if (!q) return;
+
+  // Link yapıştırıldıysa aramaya gerek yok: videoyu doğrudan bul
+  const linkId = extractYouTubeId(q);
+  if (linkId) { showLinkResult(linkId); return; }
 
   if (!key) {
     addResults.innerHTML = `<p class="note">Arama yapmak için önce sol alttan YouTube API anahtarını kaydet.</p>`;

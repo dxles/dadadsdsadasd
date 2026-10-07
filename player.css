@@ -636,3 +636,121 @@ body.hud-hidden .controls {
 }
 .lsm-source:empty { display: none; }
 @media (max-width: 560px) { .lyrics-style-menu { left: 24px; bottom: 148px; } }
+
+/* ================= İlerleme dolgusu (tüm düzenler) ================= */
+.progress-area { --p: 0%; }
+.progress-area input[type="range"] {
+    background: linear-gradient(90deg, #fff var(--p), rgba(255,255,255,0.22) var(--p));
+}
+.wave { display: none; }
+
+/* ================= Oynatıcı düzenleri =================
+   body[data-layout] = seçili stil (Ayarlar / "Stil" menüsü ile aynı seçim).
+   classic için ek kural yok. Küçük ekranlarda hepsi varsayılan düzende kalır. */
+@media (min-width: 901px) {
+
+    /* ---------- Spotify: sol altta küçük kapak + başlık, tam genişlik ince çubuk ---------- */
+    body[data-layout="spotify"] .stage { padding: 0; }
+    body[data-layout="spotify"] .now-row {
+        position: fixed;
+        left: 48px;
+        bottom: 150px;
+        width: auto;
+        max-width: max(280px, calc(100vw - 640px));
+        gap: 16px;
+    }
+    body[data-layout="spotify"] .cover-wrap {
+        width: 64px; height: 64px;
+        border-radius: 6px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    body[data-layout="spotify"] .track-meta { gap: 2px; }
+    body[data-layout="spotify"] .track-title { font-size: 22px; -webkit-line-clamp: 1; }
+    body[data-layout="spotify"] .track-channel { font-size: 14px; }
+    body[data-layout="spotify"] .player-status:empty { display: none; }
+    body[data-layout="spotify"] .progress-area {
+        position: fixed;
+        left: 48px; right: 48px; bottom: 94px;
+        margin: 0;
+        gap: 8px;
+        transition: opacity 0.4s ease;
+    }
+    body[data-layout="spotify"] .progress-area input[type="range"] { height: 4px; }
+    body[data-layout="spotify"] .progress-area input[type="range"]::-webkit-slider-thumb { width: 0; height: 0; box-shadow: none; }
+    body[data-layout="spotify"] .progress-area input[type="range"]:hover::-webkit-slider-thumb { width: 12px; height: 12px; box-shadow: none; }
+    body[data-layout="spotify"] .progress-area input[type="range"]::-moz-range-thumb { width: 0; height: 0; }
+    body[data-layout="spotify"] .progress-area input[type="range"]:hover::-moz-range-thumb { width: 12px; height: 12px; }
+    body[data-layout="spotify"] .progress-area input[type="range"]:hover {
+        background: linear-gradient(90deg, var(--spotify-green) var(--p), rgba(255,255,255,0.22) var(--p));
+    }
+    body[data-layout="spotify"] .action-row { left: auto; right: 48px; bottom: 28px; }
+    body[data-layout="spotify"] .lyrics-style-menu { left: auto; right: 48px; bottom: 76px; }
+    body.hud-hidden[data-layout="spotify"] .progress-area { opacity: 0; }
+
+    /* ---------- Apple Music: büyük kapak, altında ilerleme, altında başlık ---------- */
+    body[data-layout="apple"] .stage { padding: 0 0 0 7vw; }
+    body[data-layout="apple"] .now-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 22px;
+        width: min(360px, 40vh);
+        max-width: none;
+    }
+    body[data-layout="apple"] .cover-wrap {
+        width: 100%; height: auto;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+    }
+    body[data-layout="apple"] .track-meta { gap: 3px; text-align: center; }
+    body[data-layout="apple"] .progress-area { order: -1; margin: 0 0 10px; gap: 7px; }
+    body[data-layout="apple"] .progress-area input[type="range"] { height: 5px; border-radius: 5px; }
+    body[data-layout="apple"] .progress-area input[type="range"]::-webkit-slider-thumb { width: 0; height: 0; box-shadow: none; }
+    body[data-layout="apple"] .progress-area input[type="range"]::-moz-range-thumb { width: 0; height: 0; }
+    body[data-layout="apple"] .time-row { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); }
+    body[data-layout="apple"] .track-title { font-size: 17px; font-weight: 700; text-align: center; -webkit-line-clamp: 1; }
+    body[data-layout="apple"] .track-channel { font-size: 15px; font-weight: 500; text-align: center; color: rgba(255,255,255,0.55); }
+    body[data-layout="apple"] .player-status:empty { display: none; }
+
+    /* ---------- SoundCloud: kare kapak, etiket gibi başlık, turuncu dalga çubuğu ---------- */
+    body[data-layout="soundcloud"] .now-row { max-width: 860px; gap: 28px; align-items: flex-end; }
+    body[data-layout="soundcloud"] .cover-wrap {
+        width: 250px; height: 250px;
+        border-radius: 2px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    body[data-layout="soundcloud"] .track-meta { gap: 6px; align-items: flex-start; }
+    body[data-layout="soundcloud"] .track-channel {
+        order: -1;
+        font-size: 14px; font-weight: 500;
+        padding: 2px 9px;
+        color: #ccc;
+        background: #333;
+    }
+    body[data-layout="soundcloud"] .track-title {
+        font-size: 22px; font-weight: 700; line-height: 1.35;
+        width: fit-content; max-width: 100%;
+        padding: 3px 10px;
+        color: #111;
+        background: #fff;
+        -webkit-line-clamp: 2;
+    }
+    body[data-layout="soundcloud"] .player-status:empty { display: none; }
+    body[data-layout="soundcloud"] .progress-area { position: relative; width: 100%; margin-top: 14px; gap: 6px; }
+    body[data-layout="soundcloud"] .wave {
+        display: block;
+        width: 100%; height: 72px;
+        background: linear-gradient(90deg, #ff5500 var(--p), rgba(255,255,255,0.38) var(--p));
+        -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+        -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    }
+    /* Kaydırma çubuğu görünmez ama dalganın üstünde tıklanabilir */
+    body[data-layout="soundcloud"] .progress-area input[type="range"] {
+        position: absolute; left: 0; top: 0;
+        width: 100%; height: 72px;
+        opacity: 0;
+        background: transparent;
+    }
+    body[data-layout="soundcloud"] .time-row { font-size: 11px; font-weight: 600; }
+    body[data-layout="soundcloud"] #curTime { color: #ff5500; }
+}
