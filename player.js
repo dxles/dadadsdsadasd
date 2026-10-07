@@ -399,6 +399,8 @@ function setLyricsStatus(text) {
 
 function resetLyricsView() {
   syncedLyrics = null;
+  miniLineIdx = -2;
+  if (typeof miniLine !== "undefined" && miniLine) miniLine.textContent = "";
   if (lyricsRenderer) { lyricsRenderer.destroy(); lyricsRenderer = null; }
   lyricsContent.innerHTML = "";
   lyricsContainerOuter.classList.remove("lyrics-plain-mode", "lyrics-synced-mode", "lyrics-list-mode");
@@ -439,6 +441,38 @@ function renderPlainLyrics(text, sourceName) {
 function updateActiveLyricLine(currentTime) {
   if (!syncedLyrics || !lyricsRenderer) return;
   lyricsRenderer.update(currentTime);
+  updateMiniLine();
+}
+
+// ================= Telefon: söz görünümü =================
+// <=900px'te sözler kapağın altında tek satır (mini satır) olarak görünür;
+// satıra ya da "Sözler" düğmesine dokununca tam ekran söz görünümü açılır.
+const miniLine = document.getElementById("miniLine");
+const lyricsToggleBtn = document.getElementById("lyricsToggleBtn");
+let miniLineIdx = -2;
+
+function updateMiniLine() {
+  if (!miniLine || !syncedLyrics || !lyricsRenderer) return;
+  const idx = lyricsRenderer.index;
+  if (idx === miniLineIdx) return;
+  miniLineIdx = idx;
+  const text = idx >= 0 ? ((syncedLyrics[idx].text || "").trim() || "♪") : "";
+  miniLine.textContent = text;
+  miniLine.classList.remove("ml-in");
+  void miniLine.offsetWidth;
+  miniLine.classList.add("ml-in");
+}
+
+function setMobileLyricsOpen(open) {
+  document.body.classList.toggle("lyrics-open", open);
+  if (lyricsToggleBtn) {
+    lyricsToggleBtn.setAttribute("aria-pressed", open ? "true" : "false");
+    const label = lyricsToggleBtn.querySelector("span");
+    if (label) label.textContent = open ? "Kapak" : "Sözler";
+  }
+  try { localStorage.setItem("cinla_mobile_lyrics", open ? "1" : "0"); } catch { /* sessiz geç */ }
+  // Görünür olunca satır konumunu yeniden ölç
+  if (open && lyricsRenderer) requestAnimationFrame(() => lyricsRenderer._recenter(true));
 }
 
 // Sağlayıcılar Ayarlar'daki sıraya göre sırayla denenir (açık olanlar). İlk senkron sonuç kazanır.
@@ -488,6 +522,14 @@ async function loadLyrics(track) {
   const stale = () => myId !== lyricsLoadId;
 
   resetLyricsView();
+
+  // 1) Önbellek: daha önce bulunmuş sözler anında açılır, sağlayıcılara istek gitmez
+  const cached = getCachedLyrics(track.id);
+  if (cached && !cached.none) {
+    if (cached.synced) { renderSyncedLyrics(cached.synced, cached.source || "Önbellek"); return; }
+    if (cached.plain) { renderPlainLyrics(cached.plain, cached.source || "Önbellek"); return; }
+  }
+
   const candidates = buildLyricsQueryCandidates(track.title, track.channel);
   if (!candidates.length) {
     setLyricsStatus("Bu şarkı için söz bulunamadı.");
@@ -499,20 +541,31 @@ async function loadLyrics(track) {
     setLyricsStatus(`${PROVIDER_NAMES[id] || id} aranıyor...`);
     try {
       const r = await runLyricsProvider(id, candidates, track);
+      const name = PROVIDER_NAMES[id] || id;
+      // Sonuç bu şarkıya aitse, ekran başka şarkıya geçmiş olsa bile saklanır
+      if (r.synced) setCachedLyrics(track.id, { synced: r.synced, source: name });
       if (stale()) return;
-      if (r.synced) { renderSyncedLyrics(r.synced, PROVIDER_NAMES[id] || id); return; }
-      if (r.plain && !firstPlain) firstPlain = { text: r.plain, source: PROVIDER_NAMES[id] || id };
+      if (r.synced) { renderSyncedLyrics(r.synced, name); return; }
+      if (r.plain && !firstPlain) firstPlain = { text: r.plain, source: name };
     } catch { /* sessiz geç */ }
   }
 
   // Senkron yok: düz metin
-  if (firstPlain) { renderPlainLyrics(firstPlain.text, firstPlain.source); return; }
+  if (firstPlain) {
+    setCachedLyrics(track.id, { plain: firstPlain.text, source: firstPlain.source });
+    renderPlainLyrics(firstPlain.text, firstPlain.source);
+    return;
+  }
   setLyricsStatus("Sözler aranıyor...");
   for (const { artist, title } of candidates) {
     try {
       const lyrics = await fetchFromLyricsOvh(artist, title);
       if (stale()) return;
-      if (lyrics) { renderPlainLyrics(lyrics, "lyrics.ovh"); return; }
+      if (lyrics) {
+        setCachedLyrics(track.id, { plain: lyrics, source: "lyrics.ovh" });
+        renderPlainLyrics(lyrics, "lyrics.ovh");
+        return;
+      }
     } catch { /* sessiz geç */ }
   }
 
@@ -658,6 +711,13 @@ function init() {
   });
   scheduleHudHide();
 
+  // Telefon söz görünümü
+  let wantOpen = false;
+  try { wantOpen = localStorage.getItem("cinla_mobile_lyrics") === "1"; } catch { /* sessiz geç */ }
+  setMobileLyricsOpen(wantOpen);
+  if (lyricsToggleBtn) lyricsToggleBtn.addEventListener("click", () => setMobileLyricsOpen(!document.body.classList.contains("lyrics-open")));
+  if (miniLine) miniLine.addEventListener("click", () => setMobileLyricsOpen(true));
+
   playBtn.addEventListener("click", togglePlay);
   backBtn.addEventListener("click", () => seekRelative(-10));
   fwdBtn.addEventListener("click", () => seekRelative(10));
@@ -734,6 +794,7 @@ function init() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && !lyricsStyleMenu.hidden) { setLyricsMenuOpen(false); return; }
+    if (e.key === "Escape" && document.body.classList.contains("lyrics-open")) { setMobileLyricsOpen(false); return; }
     if (e.target.tagName === "INPUT") return;
     if (e.code === "Space") { e.preventDefault(); togglePlay(); }
     else if (e.code === "ArrowRight") seekRelative(5);

@@ -120,7 +120,8 @@ function parseTtmlTime(str) {
   return parts.reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
-// TTML metnini [{time, text}] satır listesine çevirir (kelime zamanlarından satır başı alınır).
+// TTML metnini [{time, text, words?}] satır listesine çevirir.
+// words: [{t, e, text}] -> kelime başlangıcı / bitişi (saniye, şarkı başından itibaren).
 // Çeviri / romanizasyon span'leri atlanır; uzun enstrümantal boşluklara boş satır eklenir.
 function parseTTML(xmlText) {
   if (!xmlText || xmlText.indexOf("<") === -1) return [];
@@ -139,6 +140,49 @@ function parseTTML(xmlText) {
     return out;
   };
 
+  // Zamanlı yaprak span'leri kelime olarak topla. Boşluk metin düğümlerinde olduğu için
+  // span'in hemen ardından gelen boşluk, kelimeye "sonda boşluk" olarak işlenir
+  // (böylece "ev" + "de" gibi hece parçaları birleşik kalır).
+  const collectWords = (p) => {
+    const words = [];
+    const walk = (node) => {
+      node.childNodes.forEach(ch => {
+        if (ch.nodeType === 3) {
+          if (/\s/.test(ch.nodeValue) && words.length) words[words.length - 1].space = true;
+        } else if (ch.nodeType === 1 && !skipRoles.has(roleOf(ch))) {
+          const b = parseTtmlTime(ch.getAttribute("begin"));
+          const e = parseTtmlTime(ch.getAttribute("end"));
+          const hasChildEl = Array.from(ch.childNodes).some(n => n.nodeType === 1);
+          if (b !== null && e !== null && !hasChildEl) {
+            const text = ch.textContent.replace(/\s+/g, " ");
+            if (text.trim()) {
+              words.push({ t: b, e, text: text.trim(), space: /\s$/.test(text) });
+              if (/^\s/.test(text) && words.length > 1) words[words.length - 2].space = true;
+            }
+          } else {
+            walk(ch);
+          }
+        }
+      });
+    };
+    walk(p);
+    return words;
+  };
+
+  // Hece parçalarını (arada boşluk yok) tek kelimede birleştir
+  const mergeSyllables = (raw) => {
+    const out = [];
+    raw.forEach(w => {
+      const last = out[out.length - 1];
+      if (last && !last.space) {
+        last.text += w.text; last.e = w.e; last.space = w.space;
+      } else {
+        out.push({ t: w.t, e: w.e, text: w.text, space: w.space });
+      }
+    });
+    return out.map(({ t, e, text }) => ({ t, e, text }));
+  };
+
   const lines = [];
   const ps = Array.from(doc.getElementsByTagName("p"));
   ps.forEach(p => {
@@ -151,7 +195,12 @@ function parseTTML(xmlText) {
     if (begin === null) return;
     const text = collect(p).replace(/\s+/g, " ").trim();
     if (!text) return;
-    lines.push({ time: begin, end, text });
+    const words = mergeSyllables(collectWords(p));
+    // Kelime zamanları satır metniyle tutarlı değilse (ör. eksik span) kelime senkronunu kullanma
+    const wordsOk = words.length >= 2 && words.map(w => w.text).join("").replace(/\s/g, "") === text.replace(/\s/g, "");
+    const line = { time: begin, end, text };
+    if (wordsOk) line.words = words;
+    lines.push(line);
   });
 
   lines.sort((a, b) => a.time - b.time);
@@ -159,7 +208,10 @@ function parseTTML(xmlText) {
   // Uzun boşluklara "♪" noktaları için boş satır ekle
   const result = [];
   lines.forEach((l, i) => {
-    result.push({ time: l.time, text: l.text });
+    const out = { time: l.time, text: l.text };
+    if (l.words) out.words = l.words;
+    if (l.end != null) out.end = l.end;
+    result.push(out);
     const next = lines[i + 1];
     if (l.end != null && next && next.time - l.end >= 6) result.push({ time: l.end, text: "" });
   });
@@ -245,4 +297,75 @@ async function fetchFromBetterLyricsApi(artist, title, durationSec) {
   } catch {
     return { synced: null, plain: null };
   }
+}
+
+
+// ================= Söz önbelleği =================
+// Bulunan sözler tarayıcıda (localStorage) saklanır: aynı şarkı anında açılır,
+// sağlayıcılara tekrar istek gitmez. Kelime zamanları da saklanır.
+// Sadece "senkron" sonuçlar kalıcıdır; düz metin 7 gün, "bulunamadı" 1 gün tutulur
+// (sonradan daha iyi bir kaynak çıkabilir).
+const LYRICS_CACHE_PREFIX = "cinla_lyr_";
+const LYRICS_CACHE_INDEX = "cinla_lyr_index";
+const LYRICS_CACHE_MAX = 80;
+const LYRICS_CACHE_VERSION = 2;
+const LYRICS_TTL = { synced: 90 * 864e5, plain: 7 * 864e5, none: 864e5 };
+
+function lyricsCacheIndex() {
+  try { return JSON.parse(localStorage.getItem(LYRICS_CACHE_INDEX)) || []; } catch { return []; }
+}
+function saveLyricsCacheIndex(idx) {
+  try { localStorage.setItem(LYRICS_CACHE_INDEX, JSON.stringify(idx)); } catch { /* sessiz geç */ }
+}
+
+// -> { synced, plain, source } | { none: true } | null
+function getCachedLyrics(videoId) {
+  if (!videoId) return null;
+  try {
+    const raw = localStorage.getItem(LYRICS_CACHE_PREFIX + videoId);
+    if (!raw) return null;
+    const e = JSON.parse(raw);
+    if (!e || e.v !== LYRICS_CACHE_VERSION) return null;
+    const kind = e.synced ? "synced" : e.plain ? "plain" : "none";
+    if (Date.now() - e.at > LYRICS_TTL[kind]) { dropCachedLyrics(videoId); return null; }
+    if (kind === "none") return { none: true };
+    return { synced: e.synced || null, plain: e.plain || null, source: e.source || "" };
+  } catch { return null; }
+}
+
+function dropCachedLyrics(videoId) {
+  try { localStorage.removeItem(LYRICS_CACHE_PREFIX + videoId); } catch { /* sessiz geç */ }
+  saveLyricsCacheIndex(lyricsCacheIndex().filter(id => id !== videoId));
+}
+
+function setCachedLyrics(videoId, result) {
+  if (!videoId) return;
+  const entry = {
+    v: LYRICS_CACHE_VERSION,
+    at: Date.now(),
+    source: (result && result.source) || "",
+    synced: (result && result.synced) || null,
+    plain: (result && result.plain) || null,
+  };
+  const key = LYRICS_CACHE_PREFIX + videoId;
+  const write = () => localStorage.setItem(key, JSON.stringify(entry));
+  try {
+    write();
+  } catch {
+    // Kota doldu: en eski kayıtları silerek yeniden dene
+    let idx = lyricsCacheIndex();
+    for (let i = 0; i < 10 && idx.length; i++) {
+      try { localStorage.removeItem(LYRICS_CACHE_PREFIX + idx.shift()); } catch { /* sessiz geç */ }
+      try { write(); break; } catch { /* tekrar dene */ }
+    }
+    saveLyricsCacheIndex(idx);
+    if (!localStorage.getItem(key)) return;
+  }
+  // En son kullanılan sona; sınırı aşanları ele
+  let idx = lyricsCacheIndex().filter(id => id !== videoId);
+  idx.push(videoId);
+  while (idx.length > LYRICS_CACHE_MAX) {
+    try { localStorage.removeItem(LYRICS_CACHE_PREFIX + idx.shift()); } catch { /* sessiz geç */ }
+  }
+  saveLyricsCacheIndex(idx);
 }

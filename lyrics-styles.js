@@ -110,6 +110,9 @@ class LyricsRenderer {
       if (!text) {
         el.classList.add("lr-gap");
         el.innerHTML = '<span class="lr-dots"><i></i><i></i><i></i></span>';
+      } else if (this.style === "apple" && line.words) {
+        // Apple Music: gerçek kelime zamanı varsa aktif satır kelime kelime parlar
+        el.appendChild(this._buildWords(text, line, this.lines[i + 1]));
       } else if (this.style === "soundcloud") {
         el.appendChild(this._buildWords(text, line, this.lines[i + 1]));
         const wave = document.createElement("span");
@@ -134,10 +137,31 @@ class LyricsRenderer {
     requestAnimationFrame(() => this._recenter(true));
   }
 
-  // SoundCloud: her kelimeye, satırın süresine göre dağıtılmış bir dolum gecikmesi ver
+  // Kelime kelime dolum. Satırda gerçek kelime zamanı (line.words) varsa onlar kullanılır;
+  // yoksa satırın süresi, kelime uzunluklarına göre tahmini dağıtılır.
   _buildWords(text, line, nextLine) {
     const wrap = document.createElement("span");
     wrap.className = "lr-words";
+
+    if (line.words && line.words.length) {
+      wrap.classList.add("lr-real");
+      const ws = line.words;
+      ws.forEach((w, i) => {
+        const span = document.createElement("span");
+        span.className = "lr-w";
+        span.textContent = w.text;
+        const start = Math.max(0, w.t - line.time);
+        // Kelime bitişi bir sonrakinin başına kadar uzatılırsa dolum kesintisiz akar
+        const nextStart = ws[i + 1] ? ws[i + 1].t : w.e;
+        const dur = Math.max(0.08, Math.max(w.e, Math.min(nextStart, w.e + 0.25)) - w.t);
+        span.style.setProperty("--ws", `${start.toFixed(3)}s`);
+        span.style.setProperty("--wd", `${dur.toFixed(3)}s`);
+        wrap.appendChild(span);
+        if (i < ws.length - 1) wrap.appendChild(document.createTextNode(" "));
+      });
+      return wrap;
+    }
+
     const dur = Math.max(0.8, Math.min(8, (nextLine ? nextLine.time - line.time : 4) * 0.92));
     const words = text.split(/\s+/);
     const total = words.reduce((n, w) => n + w.length + 1, 0);
@@ -190,9 +214,9 @@ class LyricsRenderer {
       el.classList.toggle("is-past", i < idx);
       el.classList.toggle("is-next", i > idx);
 
-      if (this.style === "soundcloud" && i === idx) {
+      if ((this.style === "soundcloud" || this.style === "apple") && i === idx) {
         // Seek / geç başlama durumunda dolumu doğru yerden sürdür
-        const elapsed = Math.max(0, time - this.lines[i].time);
+        const elapsed = time - this.lines[i].time;
         el.style.setProperty("--off", `${(-elapsed).toFixed(3)}s`);
       }
     }

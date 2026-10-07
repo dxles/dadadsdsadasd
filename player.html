@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nowtify Player</title>
-  <link rel="stylesheet" href="player.css?v=20261007a">
-  <link rel="stylesheet" href="lyrics-styles.css?v=20261007a">
+  <link rel="stylesheet" href="player.css?v=20261007b">
+  <link rel="stylesheet" href="lyrics-styles.css?v=20261007b">
   <!-- GSAP Animasyon Kütüphanesi -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
@@ -36,6 +36,8 @@
             <span id="durTime">0:00</span>
           </div>
         </div>
+        <!-- Telefon: aktif söz satırı (dokununca tam ekran sözler) -->
+        <button type="button" class="mini-line" id="miniLine" aria-label="Sözleri tam ekran aç"></button>
       </div>
     </div>
   </div>
@@ -58,6 +60,10 @@
     <button id="queueToggleBtn" class="corner-btn" title="Çalma sırası">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
       <span>Sıra</span>
+    </button>
+    <button id="lyricsToggleBtn" class="corner-btn mobile-only" title="Sözleri göster / gizle" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>
+      <span>Sözler</span>
     </button>
     <button id="lyricsStyleBtn" class="corner-btn" title="Söz stili ve oynatıcı düzeni" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h13"/></svg>
@@ -124,13 +130,13 @@
   </div>
 
   <!-- Ortak depolama/yardımcı fonksiyonlar -->
-  <script src="common.js?v=20261007a"></script>
+  <script src="common.js?v=20261007b"></script>
   <!-- Şarkı sözü sağlayıcıları (LRCLIB + Musixmatch) ve görünümleri -->
-  <script src="lyrics-providers.js?v=20261007a"></script>
-  <script src="lyrics-styles.js?v=20261007a"></script>
+  <script src="lyrics-providers.js?v=20261007b"></script>
+  <script src="lyrics-styles.js?v=20261007b"></script>
   <!-- YouTube Player Yükleyici Scripti -->
-  <script src="youtube-player.js?v=20261007a"></script>
+  <script src="youtube-player.js?v=20261007b"></script>
   <!-- Ana JavaScript Dosyamız -->
-  <script src="player.js?v=20261007a"></script>
+  <script src="player.js?v=20261007b"></script>
 </body>
 </html>

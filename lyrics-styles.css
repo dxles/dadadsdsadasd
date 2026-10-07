@@ -113,6 +113,18 @@
 .lr-style-apple .lr-line:hover { filter: blur(0); opacity: 0.85; }
 .lr-style-apple .lr-track { transition-duration: 0.85s; transition-timing-function: cubic-bezier(0.3, 1.15, 0.4, 1); }
 
+/* Apple: gerçek kelime zamanı olan satırlarda aktif satır kelime kelime parlar */
+.lr-style-apple .lr-line.is-active .lr-words .lr-w {
+    --dim: rgba(255, 255, 255, 0.36);
+    color: transparent;
+    background-image: linear-gradient(90deg, #fff 0 38%, var(--dim) 62% 100%);
+    background-size: 260% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+            background-clip: text;
+    animation: lr-fill var(--wd, 0.5s) linear calc(var(--ws, 0s) + var(--off, 0s)) both;
+}
+
 /* ---------- SoundCloud ---------- */
 .lr-style-soundcloud .lr-line {
     --sc: #ff5500;
