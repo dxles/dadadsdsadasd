@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="lyrics-styles.css">
+<link rel="stylesheet" href="style.css?v=20261007a">
+<link rel="stylesheet" href="lyrics-styles.css?v=20261007a">
 </head>
 <body>
 
@@ -111,9 +111,15 @@
     <h2 id="settingsTitle">Ayarlar</h2>
 
     <section class="settings-section">
-      <h3>Oynatıcı ve söz stili</h3>
-      <p class="settings-hint">Seçtiğin stil hem sözlerin animasyonunu hem de oynatıcıdaki kapak, başlık ve ilerleme çubuğunun düzenini değiştirir. Önizlemeler canlı oynar, seçim hemen kaydedilir.</p>
+      <h3>Şarkı sözü stili</h3>
+      <p class="settings-hint">Sözlerin nasıl akacağını seç. Önizlemeler canlı oynar, seçim hemen kaydedilir.</p>
       <div class="lyrics-style-grid" id="lyricsStyleGrid" role="radiogroup" aria-label="Şarkı sözü animasyonu"></div>
+    </section>
+
+    <section class="settings-section">
+      <h3>Oynatıcı düzeni</h3>
+      <p class="settings-hint">Kapak, başlık ve ilerleme çubuğunun yerleşimi. "Sözlerle aynı" seçiliyken yukarıdaki söz stiline uyar, istersen ikisini ayrı seçebilirsin.</p>
+      <div class="layout-grid" id="layoutGrid" role="radiogroup" aria-label="Oynatıcı düzeni"></div>
     </section>
 
     <section class="settings-section">
@@ -191,10 +197,10 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Flip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
-<script src="common.js"></script>
-<script src="lyrics-styles.js"></script>
-<script src="seed-songs.js"></script>
-<script src="youtube-player.js"></script>
-<script src="app.js"></script>
+<script src="common.js?v=20261007a"></script>
+<script src="lyrics-styles.js?v=20261007a"></script>
+<script src="seed-songs.js?v=20261007a"></script>
+<script src="youtube-player.js?v=20261007a"></script>
+<script src="app.js?v=20261007a"></script>
 </body>
 </html>

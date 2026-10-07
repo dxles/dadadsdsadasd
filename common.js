@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   lyricsStyle: "cinla_lyrics_style",
   lyricsFallback: "cinla_lyrics_fallback",
   lyricsProviders: "cinla_lyrics_providers",
+  playerLayout: "cinla_player_layout",
 };
 
 function escapeHtml(str) {
@@ -248,17 +249,27 @@ function findSongMeta(id) {
   return null;
 }
 
-// Yerelde yoksa (ör. link başka cihazda açıldıysa) YouTube oEmbed'den çek
+// Yerelde yoksa (ör. link başka cihazda açıldıysa) başlık/kanalı çevrimiçi bul.
+// Önce YouTube'un kendi oEmbed servisi, olmazsa noembed.com (tarayıcıdan okumaya izin verir).
 async function fetchSongMetaOnline(id) {
-  try {
-    const url = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent("https://www.youtube.com/watch?v=" + id)}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const d = await res.json();
-    return d && d.title ? { title: d.title, channel: d.author_name || "" } : null;
-  } catch {
-    return null;
+  const watch = encodeURIComponent("https://www.youtube.com/watch?v=" + id);
+  const sources = [
+    `https://www.youtube.com/oembed?format=json&url=${watch}`,
+    `https://noembed.com/embed?url=${watch}`,
+  ];
+  for (const url of sources) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) continue;
+      const d = await res.json();
+      if (d && d.title && !d.error) return { title: d.title, channel: d.author_name || "" };
+    } catch { /* sıradaki kaynağı dene */ } finally {
+      clearTimeout(timer);
+    }
   }
+  return null;
 }
 
 // ---- YouTube linkinden video ID çıkar (watch, youtu.be, shorts, embed, live, music.youtube.com) ----
@@ -281,4 +292,33 @@ function extractYouTubeId(text) {
     if (m) return m[1];
   }
   return null;
+}
+
+// ---- Oynatıcı düzeni (kapak / başlık / ilerleme çubuğu) — söz stilinden bağımsız seçilebilir ----
+// "auto": seçili söz stiliyle aynı düzeni kullan (varsayılan)
+const PLAYER_LAYOUTS = [
+  { id: "auto",       name: "Sözlerle aynı", desc: "Seçili söz stilinin düzenini kullanır" },
+  { id: "classic",    name: "Klasik",        desc: "Kapak solda, başlık ve çubuk yanında" },
+  { id: "spotify",    name: "Spotify",       desc: "Sol altta küçük kapak, tam genişlik çubuk" },
+  { id: "apple",      name: "Apple Music",   desc: "Büyük kapak, altında çubuk ve başlık" },
+  { id: "soundcloud", name: "SoundCloud",    desc: "Etiket başlık, turuncu dalga çubuğu" },
+];
+
+function getPlayerLayout() {
+  try {
+    const v = localStorage.getItem(STORAGE_KEYS.playerLayout);
+    return PLAYER_LAYOUTS.some(l => l.id === v) ? v : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+function setPlayerLayout(id) {
+  try { localStorage.setItem(STORAGE_KEYS.playerLayout, id); } catch { /* sessiz geç */ }
+}
+
+// Gerçekte uygulanacak düzen ("auto" ise söz stili)
+function resolvePlayerLayout() {
+  const l = getPlayerLayout();
+  return l === "auto" ? getLyricsStyle() : l;
 }

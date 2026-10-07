@@ -754,3 +754,20 @@ body.hud-hidden .controls {
     body[data-layout="soundcloud"] .time-row { font-size: 11px; font-weight: 600; }
     body[data-layout="soundcloud"] #curTime { color: #ff5500; }
 }
+
+
+/* ---- Menüde oynatıcı düzeni seçimi ---- */
+.lsm-title-2 { margin-top: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+.lsm-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 4px 2px; }
+.lsm-chip {
+    padding: 6px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.07);
+    border: 1px solid transparent;
+    border-radius: 99px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.lsm-chip:hover { background: rgba(255,255,255,0.14); }
+.lsm-chip.selected { background: rgba(29,185,84,0.18); border-color: var(--spotify-green); color: #fff; }

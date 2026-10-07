@@ -154,9 +154,23 @@ function buildWave(seedStr) {
 
 // Seçili stil oynatıcı düzenini de belirler (CSS: body[data-layout=...])
 function applyLayout() {
-  document.body.dataset.layout = getLyricsStyle();
+  document.body.dataset.layout = resolvePlayerLayout();
 }
 applyLayout();
+
+// Başlık hiçbir yerden bulunamadıysa YouTube oynatıcısının kendi video bilgisini kullan
+let awaitingPlayerMeta = false;
+function tryMetaFromPlayer() {
+  if (!awaitingPlayerMeta || !ytPlayer || !ytPlayer.getVideoData) return;
+  let d = null;
+  try { d = ytPlayer.getVideoData(); } catch { /* henüz hazır değil */ }
+  if (!d || !d.title) return;
+  awaitingPlayerMeta = false;
+  current = { id: current.id, title: d.title, channel: d.author || "" };
+  applyTrackMeta(current);
+  renderQueuePanel();
+  loadLyrics(current);
+}
 
 // ================= Kapak / Başlık =================
 function applyTrackMeta(track) {
@@ -226,7 +240,9 @@ function initPlayer() {
 }
 
 function updateProgress() {
-  if (!ytPlayer || !ytPlayer.getCurrentTime || isSeeking) return;
+  if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+  if (awaitingPlayerMeta) tryMetaFromPlayer();
+  if (isSeeking) return;
   const dur = ytPlayer.getDuration() || 0;
   const cur = ytPlayer.getCurrentTime() || 0;
   if (dur > 0) {
@@ -531,10 +547,31 @@ function renderLyricsStyleMenu() {
   });
 }
 
+function renderLayoutMenu() {
+  const active = getPlayerLayout();
+  const box = document.getElementById("layoutOptions");
+  box.innerHTML = "";
+  PLAYER_LAYOUTS.forEach(l => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "lsm-chip" + (l.id === active ? " selected" : "");
+    b.title = l.desc;
+    b.setAttribute("role", "menuitemradio");
+    b.setAttribute("aria-checked", l.id === active ? "true" : "false");
+    b.textContent = l.name;
+    b.addEventListener("click", () => {
+      setPlayerLayout(l.id);
+      applyLayout();
+      renderLayoutMenu();
+    });
+    box.appendChild(b);
+  });
+}
+
 function setLyricsMenuOpen(open) {
   lyricsStyleMenu.hidden = !open;
   lyricsStyleBtn.setAttribute("aria-expanded", open ? "true" : "false");
-  if (open) renderLyricsStyleMenu();
+  if (open) { renderLyricsStyleMenu(); renderLayoutMenu(); }
 }
 
 // ================= HUD Otomatik Gizleme =================
@@ -597,7 +634,13 @@ function init() {
       applyTrackMeta(current);
       renderQueuePanel();
       if (meta) loadLyrics(current);
-      else setLyricsStatus("Bu şarkı için söz bulunamadı.");
+      else {
+        // Çevrimiçi servisler yanıt vermedi: başlığı YouTube oynatıcısından alacağız
+        awaitingPlayerMeta = true;
+        trackTitle.textContent = "Yükleniyor...";
+        setLyricsStatus("Video bilgisi bekleniyor...");
+        tryMetaFromPlayer();
+      }
     });
   } else {
     loadLyrics(current);
@@ -610,7 +653,8 @@ function init() {
     setLyricsMenuOpen(lyricsStyleMenu.hidden);
   });
   document.addEventListener("click", (e) => {
-    if (!lyricsStyleMenu.hidden && !lyricsStyleMenu.contains(e.target)) setLyricsMenuOpen(false);
+    // composedPath: tıklanan öğe liste yeniden çizilirken DOM'dan çıksa bile menünün içinden sayılır
+    if (!lyricsStyleMenu.hidden && !e.composedPath().includes(lyricsStyleMenu)) setLyricsMenuOpen(false);
   });
   scheduleHudHide();
 

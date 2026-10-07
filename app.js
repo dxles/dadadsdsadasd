@@ -442,6 +442,37 @@ function init() {
     });
   }
 
+  // Oynatıcı düzeni: küçük tel kafes önizlemeli kartlar
+  const layoutGrid = document.getElementById("layoutGrid");
+  const LAYOUT_WIRES = {
+    auto: `<span class="w-auto">Söz stiline<br>uyar</span>`,
+    classic: `<i class="w-cover" style="left:8%;top:28%;width:30%;height:44%"></i><i class="w-line" style="left:44%;top:34%;width:44%"></i><i class="w-line s" style="left:44%;top:46%;width:28%"></i><i class="w-bar" style="left:44%;top:62%;width:44%"></i>`,
+    spotify: `<i class="w-cover" style="left:6%;top:56%;width:12%;height:20%"></i><i class="w-line" style="left:21%;top:60%;width:26%"></i><i class="w-line s" style="left:21%;top:70%;width:16%"></i><i class="w-bar" style="left:6%;top:84%;width:88%"></i>`,
+    apple: `<i class="w-cover" style="left:10%;top:10%;width:34%;height:50%;border-radius:6px"></i><i class="w-bar" style="left:10%;top:66%;width:34%"></i><i class="w-line" style="left:18%;top:76%;width:18%"></i><i class="w-line s" style="left:20%;top:86%;width:14%"></i>`,
+    soundcloud: `<i class="w-cover" style="left:6%;top:26%;width:26%;height:48%;border-radius:1px"></i><i class="w-tag" style="left:36%;top:28%;width:22%"></i><i class="w-tag lt" style="left:36%;top:38%;width:50%"></i><i class="w-wave" style="left:36%;top:54%;width:56%"></i>`,
+  };
+
+  function renderLayoutCards() {
+    const active = getPlayerLayout();
+    layoutGrid.innerHTML = "";
+    PLAYER_LAYOUTS.forEach(l => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "layout-card" + (l.id === active ? " selected" : "");
+      card.setAttribute("role", "radio");
+      card.setAttribute("aria-checked", l.id === active ? "true" : "false");
+      card.innerHTML = `
+        <div class="layout-wire layout-wire-${l.id}">${LAYOUT_WIRES[l.id] || ""}</div>
+        <span class="lyrics-style-name">${escapeHtml(l.name)}</span>
+        <span class="lyrics-style-desc">${escapeHtml(l.desc)}</span>`;
+      card.addEventListener("click", () => {
+        setPlayerLayout(l.id);
+        renderLayoutCards();
+      });
+      layoutGrid.appendChild(card);
+    });
+  }
+
   function startPreviewClock() {
     stopPreviewClock();
     const t0 = performance.now();
@@ -460,6 +491,7 @@ function init() {
 
   function openSettings() {
     renderProviderList();
+    renderLayoutCards();
     settingsModal.classList.remove("hidden");
     renderLyricsStyleCards();
     startPreviewClock();
@@ -770,12 +802,12 @@ async function showLinkResult(id) {
     } catch { /* oEmbed'e düş */ }
   }
   if (!meta) meta = await fetchSongMetaOnline(id);
-  if (!meta) {
-    addResults.innerHTML = `<p class="note">Bu linkteki video bulunamadı ya da gömülü oynatmaya kapalı olabilir.</p>`;
-    return;
-  }
 
-  const { title, channel } = meta;
+  // Başlık alınamadıysa da videoyu çalabilmen için sonucu yine göster:
+  // oynatıcı başlığı YouTube'dan kendisi okuyacak.
+  const known = !!meta;
+  const title = known ? meta.title : `YouTube videosu (${id})`;
+  const channel = known ? meta.channel : "Başlık oynatıcıda yüklenecek";
   const row = document.createElement("div");
   row.className = "add-result-item";
   row.innerHTML = `
@@ -784,10 +816,11 @@ async function showLinkResult(id) {
       <p>${escapeHtml(title)}</p>
       <p class="sub">${escapeHtml(channel)}</p>
     </div>
-    <a class="btn btn-quiet btn-small" href="player.html?v=${encodeURIComponent(id)}&t=${encodeURIComponent(title)}&c=${encodeURIComponent(channel)}">Çal</a>
-    <button class="btn btn-primary btn-small">Ekle</button>
+    <a class="btn btn-quiet btn-small" href="player.html?v=${encodeURIComponent(id)}${known ? `&t=${encodeURIComponent(title)}&c=${encodeURIComponent(channel)}` : ""}">Çal</a>
+    ${known ? `<button class="btn btn-primary btn-small">Ekle</button>` : ""}
   `;
-  row.querySelector("button").addEventListener("click", e => {
+  const addBtn = row.querySelector("button");
+  if (addBtn) addBtn.addEventListener("click", e => {
     saveUserSong({ id, title, channel, genre: "benim" });
     e.currentTarget.textContent = "Eklendi";
     e.currentTarget.disabled = true;
