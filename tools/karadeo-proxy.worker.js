@@ -1,23 +1,9 @@
-// Karadeo CORS proxy (Cloudflare Workers) — SADECE tarayıcı Karadeo'ya doğrudan bağlanamıyorsa gerekir.
-//
-// Ne yapar: Siteden gelen isteği olduğu gibi https://karadeo.com/api/transcribe adresine iletir
-// ve yanıta CORS izin başlıkları ekler. API anahtarını SAKLAMAZ; tarayıcının gönderdiği
-// "Authorization" başlığını aynen iletir. Yani anahtar yine sadece sende (localStorage) durur.
-//
-// Kurulum (ücretsiz, ~2 dk):
-//  1) dash.cloudflare.com -> Workers & Pages -> Create -> "Hello World" Worker oluştur
-//  2) Edit code -> bu dosyanın içeriğini yapıştır -> Deploy
-//  3) Settings -> Variables -> ALLOWED_ORIGIN = https://KULLANICI.github.io  (sitenin adresi, sonda / olmadan)
-//  4) Worker adresini (https://....workers.dev) Çınla > Ayarlar > Karadeo > Proxy adresi alanına yaz
-//
-// ALLOWED_ORIGIN'i mutlaka ayarla; yoksa herkes senin worker'ını kullanabilir (anahtarı olanlar için sorun değil
-// ama gereksiz trafik çeker).
-
+// Karadeo CORS proxy (Cloudflare Workers)
 const UPSTREAM = "https://karadeo.com/api/transcribe";
 
 export default {
   async fetch(request, env) {
-    const allowed = (env && env.ALLOWED_ORIGIN) || "*";
+    const allowed = "https://dxles.github.io";
     const cors = {
       "Access-Control-Allow-Origin": allowed,
       "Access-Control-Allow-Methods": "POST, OPTIONS",
