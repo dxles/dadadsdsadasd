@@ -405,6 +405,11 @@ function resetLyricsView() {
   lyricsContent.innerHTML = "";
   lyricsContainerOuter.classList.remove("lyrics-plain-mode", "lyrics-synced-mode", "lyrics-list-mode");
   setLyricsSourceLabel("");
+  lyricsMode = "loading";
+  plainLyricsText = "";
+  aiPhase = "idle";
+  aiMessage = "";
+  updateAiUi();
 }
 
 function renderSyncedLyrics(lines, sourceName) {
@@ -423,6 +428,8 @@ function renderSyncedLyrics(lines, sourceName) {
   r.setPaused(!isPlaying);
   if (ytPlayer && ytPlayer.getCurrentTime) r.update(ytPlayer.getCurrentTime() || 0);
   setLyricsSourceLabel(sourceName, false);
+  lyricsMode = "synced";
+  updateAiUi();
 }
 
 function renderPlainLyrics(text, sourceName) {
@@ -436,6 +443,9 @@ function renderPlainLyrics(text, sourceName) {
     .map(line => `<p>${escapeHtml(line) || "&nbsp;"}</p>`)
     .join("");
   setLyricsSourceLabel(sourceName, true);
+  lyricsMode = "plain";
+  plainLyricsText = text;
+  updateAiUi();
 }
 
 function updateActiveLyricLine(currentTime) {
@@ -474,6 +484,171 @@ function setMobileLyricsOpen(open) {
   // Görünür olunca satır konumunu yeniden ölç
   if (open && lyricsRenderer) requestAnimationFrame(() => lyricsRenderer._recenter(true));
 }
+
+// ================= Yapay zekâ ile söz (Karadeo) =================
+// Sağlayıcıların hiçbiri senkron söz bulamadığında (ya da sadece düz söz bulunduğunda) elle başlatılır.
+// Kredi harcadığı için ASLA otomatik çalışmaz; her seferinde onay ister. Sonuç kalıcı saklanır.
+const aiBox = document.getElementById("aiBox");
+const aiTitle = document.getElementById("aiTitle");
+const aiText = document.getElementById("aiText");
+const aiKeyRow = document.getElementById("aiKeyRow");
+const aiKeyInput = document.getElementById("aiKeyInput");
+const aiKeySaveBtn = document.getElementById("aiKeySaveBtn");
+const aiKeyLink = document.getElementById("aiKeyLink");
+const aiGoBtn = document.getElementById("aiGoBtn");
+const aiBackBtn = document.getElementById("aiBackBtn");
+const aiCloseBtn = document.getElementById("aiCloseBtn");
+const aiMenuBtn = document.getElementById("aiMenuBtn");
+
+let lyricsMode = "loading";   // loading | none | plain | synced
+let plainLyricsText = "";
+let aiPhase = "idle";         // idle | confirm
+let aiMessage = "";           // son hata (Türkçe)
+let aiErrorCode = "";
+let aiOpenFor = null;         // menüden açıldığı video
+let aiDismissedFor = null;    // "×" ile gizlendiği video
+const aiInFlight = new Set(); // şu an Karadeo'da işlenen video id'leri
+
+function markNoLyrics() {
+  lyricsMode = "none";
+  setLyricsStatus("Bu şarkı için söz bulunamadı.");
+  updateAiUi();
+}
+
+function aiCostText() {
+  const d = currentDuration();
+  return d > 0 ? `≈ ${Math.ceil(d / 60)} kredi (1 kredi = 1 dakika)` : "1 dakika = 1 kredi";
+}
+
+function updateAiUi() {
+  if (!aiBox) return;
+  const id = current && current.id;
+  const running = aiInFlight.has(id);
+  const eligible = lyricsMode === "none" || lyricsMode === "plain";
+  const hasKey = !!getKaradeoKey();
+
+  // Stil menüsündeki giriş
+  aiMenuBtn.classList.toggle("hidden", !(eligible || running));
+  aiMenuBtn.disabled = running;
+  aiMenuBtn.textContent = running ? "Yapay zekâ çalışıyor..."
+    : lyricsMode === "plain" ? "Yapay zekâ ile senkronla" : "Yapay zekâ ile söz oluştur";
+
+  // Kutu: söz yokken hep önerilir; düz söz varken sadece anahtar kayıtlıysa ya da menüden açıldıysa
+  const visible = running || (eligible && aiDismissedFor !== id &&
+    (lyricsMode === "none" || hasKey || aiOpenFor === id));
+  aiBox.classList.toggle("hidden", !visible);
+  aiBox.classList.toggle("is-running", running);
+  if (!visible) return;
+
+  const align = lyricsMode === "plain";
+  aiText.classList.remove("is-error");
+  aiKeyRow.classList.add("hidden");
+  aiKeyLink.classList.add("hidden");
+  aiBackBtn.classList.add("hidden");
+  aiGoBtn.classList.remove("hidden");
+  aiGoBtn.disabled = false;
+
+  if (running) {
+    aiTitle.textContent = "Yapay zekâ çalışıyor";
+    aiText.textContent = "Şarkı indirilip işleniyor, 1-2 dakika sürebilir. Başka şarkıya geçebilirsin, sonuç saklanır.";
+    aiGoBtn.classList.add("hidden");
+    return;
+  }
+  if (aiMessage) {
+    aiTitle.textContent = "Olmadı";
+    aiText.textContent = aiMessage;
+    aiText.classList.add("is-error");
+    if (aiErrorCode === "auth" || !hasKey) { aiKeyRow.classList.remove("hidden"); aiKeyLink.classList.remove("hidden"); }
+    aiGoBtn.textContent = "Tekrar dene";
+    aiGoBtn.classList.toggle("hidden", !hasKey);
+    return;
+  }
+  if (!hasKey) {
+    aiTitle.textContent = align ? "Sözleri yapay zekâyla senkronla" : "Yapay zekâ ile söz oluştur";
+    aiText.textContent = "Bu özellik Karadeo API anahtarı ister. Ücretsiz planda ayda 10 dakikalık kredi var.";
+    aiKeyRow.classList.remove("hidden");
+    aiKeyLink.classList.remove("hidden");
+    aiGoBtn.classList.add("hidden");
+    return;
+  }
+  if (aiPhase === "confirm") {
+    aiTitle.textContent = "Başlatılsın mı?";
+    aiText.textContent = `${aiCostText()} harcanır. Başarısız olursa kredi düşmez.`;
+    aiGoBtn.textContent = "Onayla ve başlat";
+    aiBackBtn.classList.remove("hidden");
+    return;
+  }
+  if (align) {
+    aiTitle.textContent = "Sözler var, zamanlaması yok";
+    aiText.textContent = `Yapay zekâ şarkıyı dinleyip mevcut sözü sesle hizalar. En güvenilir yöntem. ${aiCostText()}.`;
+    aiGoBtn.textContent = "Yapay zekâ ile senkronla";
+  } else {
+    aiTitle.textContent = "Söz bulunamadı";
+    aiText.textContent = `Yapay zekâ şarkıyı dinleyip sözleri çıkarabilir. Müzikli kayıtlarda hata yapabilir. ${aiCostText()}.`;
+    aiGoBtn.textContent = "Yapay zekâ ile söz oluştur";
+  }
+}
+
+async function runAiLyrics() {
+  const id = current.id;
+  if (!id || aiInFlight.has(id)) return;
+  const align = lyricsMode === "plain";
+  const plain = align ? plainLyricsText : "";
+  aiInFlight.add(id);
+  aiPhase = "idle";
+  aiMessage = "";
+  aiErrorCode = "";
+  updateAiUi();
+  try {
+    const r = await fetchFromKaradeo(id, plain);
+    const source = align ? "Karadeo hizalama (yapay zekâ)" : "Karadeo (yapay zekâ)";
+    // Kredi harcandı: şarkıdan ayrılmış olsak bile sonuç saklanır
+    if (r.synced) {
+      setCachedLyrics(id, { synced: r.synced, source, ai: true });
+      if (current.id === id) renderSyncedLyrics(r.synced, source);
+    } else if (r.plain) {
+      setCachedLyrics(id, { plain: r.plain, source, ai: true });
+      if (current.id === id) renderPlainLyrics(r.plain, source);
+    }
+  } catch (e) {
+    if (current.id === id) {
+      aiMessage = (e && e.userMessage) || "Beklenmeyen bir hata oldu.";
+      aiErrorCode = (e && e.code) || "";
+    }
+  } finally {
+    aiInFlight.delete(id);
+    updateAiUi();
+  }
+}
+
+aiGoBtn.addEventListener("click", () => {
+  if (aiPhase === "confirm" && !aiMessage) { runAiLyrics(); return; }
+  aiMessage = "";
+  aiPhase = "confirm";
+  updateAiUi();
+});
+aiBackBtn.addEventListener("click", () => { aiPhase = "idle"; updateAiUi(); });
+aiCloseBtn.addEventListener("click", () => { aiDismissedFor = current.id; updateAiUi(); });
+aiKeySaveBtn.addEventListener("click", () => {
+  const v = aiKeyInput.value.trim();
+  if (!v) return;
+  setKaradeoKey(v);
+  aiKeyInput.value = "";
+  aiMessage = "";
+  aiErrorCode = "";
+  aiPhase = "idle";
+  updateAiUi();
+});
+aiKeyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") aiKeySaveBtn.click(); });
+aiMenuBtn.addEventListener("click", () => {
+  setLyricsMenuOpen(false);
+  aiOpenFor = current.id;
+  aiDismissedFor = null;
+  aiPhase = "idle";
+  // Telefonda kutu sadece tam ekran sözler açıkken görünür
+  if (window.matchMedia("(max-width: 900px)").matches) setMobileLyricsOpen(true);
+  updateAiUi();
+});
 
 // Sağlayıcılar Ayarlar'daki sıraya göre sırayla denenir (açık olanlar). İlk senkron sonuç kazanır.
 // Hiçbiri senkron bulamazsa ilk bulunan düz metin, o da yoksa lyrics.ovh denenir.
@@ -532,7 +707,7 @@ async function loadLyrics(track) {
 
   const candidates = buildLyricsQueryCandidates(track.title, track.channel);
   if (!candidates.length) {
-    setLyricsStatus("Bu şarkı için söz bulunamadı.");
+    markNoLyrics();
     return;
   }
 
@@ -569,7 +744,7 @@ async function loadLyrics(track) {
     } catch { /* sessiz geç */ }
   }
 
-  if (!stale()) setLyricsStatus("Bu şarkı için söz bulunamadı.");
+  if (!stale()) markNoLyrics();
 }
 
 // ================= Söz stili menüsü =================
@@ -681,18 +856,26 @@ function init() {
     // Başlık yerelde yok (link başka yerde açıldı): oEmbed'den çek, sonra sözleri ara
     trackTitle.textContent = "Yükleniyor...";
     const wantedId = current.id;
+    // Sözler önbellekteyse (yapay zekâ ile üretilenler dahil) başlığı beklemeden göster:
+    // önbellek video ID ile çalışır
+    if (getCachedLyrics(wantedId)) loadLyrics(current);
     fetchSongMetaOnline(wantedId).then(meta => {
       if (current.id !== wantedId) return;
       current = { id: wantedId, title: (meta && meta.title) || "Bilinmeyen Şarkı", channel: (meta && meta.channel) || "" };
       applyTrackMeta(current);
       renderQueuePanel();
-      if (meta) loadLyrics(current);
-      else {
+      const hasCache = !!getCachedLyrics(wantedId);
+      if (meta) { if (!hasCache) loadLyrics(current); }
+      else if (!hasCache) {
         // Çevrimiçi servisler yanıt vermedi: başlığı YouTube oynatıcısından alacağız
         awaitingPlayerMeta = true;
         trackTitle.textContent = "Yükleniyor...";
         setLyricsStatus("Video bilgisi bekleniyor...");
         tryMetaFromPlayer();
+        // Başlık hiç gelmezse takılı kalma: yapay zekâ seçeneği sadece video ID ile de çalışır
+        setTimeout(() => {
+          if (awaitingPlayerMeta && current.id === wantedId && lyricsMode === "loading") markNoLyrics();
+        }, 10000);
       }
     });
   } else {

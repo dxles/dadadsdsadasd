@@ -489,7 +489,33 @@ function init() {
     previewTimer = null;
   }
 
+  // Karadeo (yapay zekâ söz): anahtar + isteğe bağlı proxy
+  const kKeyInput = document.getElementById("karadeoKeyInput");
+  const kKeyInfo = document.getElementById("karadeoKeyInfo");
+  const kProxyInput = document.getElementById("karadeoProxyInput");
+  function renderKaradeoSettings() {
+    const k = getKaradeoKey();
+    kKeyInput.value = "";
+    kKeyInfo.textContent = k ? `Anahtar kayıtlı (…${k.slice(-4)}). Sadece bu tarayıcıda saklanır.` : "Henüz anahtar yok.";
+    kProxyInput.value = getKaradeoProxy();
+  }
+  document.getElementById("karadeoKeySave").addEventListener("click", () => {
+    const v = kKeyInput.value.trim();
+    if (!v) return;
+    setKaradeoKey(v);
+    renderKaradeoSettings();
+  });
+  document.getElementById("karadeoKeyClear").addEventListener("click", () => { setKaradeoKey(""); renderKaradeoSettings(); });
+  document.getElementById("karadeoProxySave").addEventListener("click", () => {
+    const v = kProxyInput.value.trim();
+    if (v && !/^https:\/\//i.test(v)) { kProxyInput.setCustomValidity("https:// ile başlamalı"); kProxyInput.reportValidity(); return; }
+    kProxyInput.setCustomValidity("");
+    setKaradeoProxy(v);
+    renderKaradeoSettings();
+  });
+
   function openSettings() {
+    renderKaradeoSettings();
     renderProviderList();
     renderLayoutCards();
     settingsModal.classList.remove("hidden");

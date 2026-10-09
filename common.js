@@ -11,6 +11,8 @@ const STORAGE_KEYS = {
   lyricsFallback: "cinla_lyrics_fallback",
   lyricsProviders: "cinla_lyrics_providers",
   playerLayout: "cinla_player_layout",
+  karadeoKey: "cinla_karadeo_key",
+  karadeoProxy: "cinla_karadeo_proxy",
 };
 
 function escapeHtml(str) {
@@ -321,4 +323,33 @@ function setPlayerLayout(id) {
 function resolvePlayerLayout() {
   const l = getPlayerLayout();
   return l === "auto" ? getLyricsStyle() : l;
+}
+
+// ---- Karadeo (yapay zekâ ile söz oluşturma) ----
+// Anahtar sadece bu tarayıcıda (localStorage) durur; kodun içine yazılmaz, sunucuya gitmez.
+function getKaradeoKey() {
+  try { return (localStorage.getItem(STORAGE_KEYS.karadeoKey) || "").trim(); } catch { return ""; }
+}
+function setKaradeoKey(v) {
+  try {
+    if (v) localStorage.setItem(STORAGE_KEYS.karadeoKey, v.trim());
+    else localStorage.removeItem(STORAGE_KEYS.karadeoKey);
+  } catch { /* sessiz geç */ }
+}
+// İsteğe bağlı: tarayıcı Karadeo'ya doğrudan istek atamıyorsa (CORS) araya konan kendi proxy adresin
+function getKaradeoProxy() {
+  try { return (localStorage.getItem(STORAGE_KEYS.karadeoProxy) || "").trim(); } catch { return ""; }
+}
+function setKaradeoProxy(v) {
+  try {
+    if (v) localStorage.setItem(STORAGE_KEYS.karadeoProxy, v.trim());
+    else localStorage.removeItem(STORAGE_KEYS.karadeoProxy);
+  } catch { /* sessiz geç */ }
+}
+
+// ---- PWA: uygulama olarak kurulabilir + çevrimdışı kabuk ----
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* sessiz geç */ });
+  });
 }

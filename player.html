@@ -2,10 +2,17 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F1733">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Çınla">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
   <title>Nowtify Player</title>
-  <link rel="stylesheet" href="player.css?v=20261007b">
-  <link rel="stylesheet" href="lyrics-styles.css?v=20261007b">
+  <link rel="stylesheet" href="player.css?v=20261009a">
+  <link rel="stylesheet" href="lyrics-styles.css?v=20261009a">
   <!-- GSAP Animasyon Kütüphanesi -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
@@ -78,6 +85,23 @@
     <div class="lsm-title lsm-title-2">Oynatıcı düzeni</div>
     <div class="lsm-chips" id="layoutOptions"></div>
     <div class="lsm-source" id="lyricsSourceInfo"></div>
+    <button type="button" class="lsm-ai-btn hidden" id="aiMenuBtn"></button>
+  </div>
+
+  <!-- Yapay zekâ ile söz oluşturma / senkronlama (Karadeo) -->
+  <div class="ai-box hidden" id="aiBox" role="region" aria-label="Yapay zekâ ile söz">
+    <button type="button" class="ai-close" id="aiCloseBtn" aria-label="Gizle">×</button>
+    <div class="ai-title" id="aiTitle"></div>
+    <div class="ai-text" id="aiText"></div>
+    <div class="ai-key-row hidden" id="aiKeyRow">
+      <input type="password" id="aiKeyInput" placeholder="Karadeo API anahtarı (kd_...)" autocomplete="off" spellcheck="false">
+      <button type="button" class="ai-btn" id="aiKeySaveBtn">Kaydet</button>
+    </div>
+    <a class="ai-link hidden" id="aiKeyLink" href="https://karadeo.com/dashboard" target="_blank" rel="noopener">Anahtarı karadeo.com'dan al</a>
+    <div class="ai-actions" id="aiActions">
+      <button type="button" class="ai-btn primary" id="aiGoBtn"></button>
+      <button type="button" class="ai-btn hidden" id="aiBackBtn">Vazgeç</button>
+    </div>
   </div>
 
   <!-- Çalma Sırası Paneli -->
@@ -130,13 +154,13 @@
   </div>
 
   <!-- Ortak depolama/yardımcı fonksiyonlar -->
-  <script src="common.js?v=20261007b"></script>
+  <script src="common.js?v=20261009a"></script>
   <!-- Şarkı sözü sağlayıcıları (LRCLIB + Musixmatch) ve görünümleri -->
-  <script src="lyrics-providers.js?v=20261007b"></script>
-  <script src="lyrics-styles.js?v=20261007b"></script>
+  <script src="lyrics-providers.js?v=20261009a"></script>
+  <script src="lyrics-styles.js?v=20261009a"></script>
   <!-- YouTube Player Yükleyici Scripti -->
-  <script src="youtube-player.js?v=20261007b"></script>
+  <script src="youtube-player.js?v=20261009a"></script>
   <!-- Ana JavaScript Dosyamız -->
-  <script src="player.js?v=20261007b"></script>
+  <script src="player.js?v=20261009a"></script>
 </body>
 </html>

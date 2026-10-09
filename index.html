@@ -2,13 +2,20 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F1733">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Çınla">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Çınla: Türkçe müzik</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261007b">
-<link rel="stylesheet" href="lyrics-styles.css?v=20261007b">
+<link rel="stylesheet" href="style.css?v=20261009a">
+<link rel="stylesheet" href="lyrics-styles.css?v=20261009a">
 </head>
 <body>
 
@@ -128,6 +135,29 @@
       <div class="provider-list" id="providerList"></div>
     </section>
 
+    <section class="settings-section">
+      <h3>Yapay zekâ ile söz (Karadeo)</h3>
+      <p class="settings-hint">Hiçbir kaynakta söz bulunamayan şarkılar için yapay zekâ sözü çıkarır, sözü olup zamanlaması olmayanları sesle hizalar. Oynatıcıda her seferinde onay ister, otomatik çalışmaz. Karadeo'da 1 kredi = 1 dakika şarkı; ücretsiz planda ayda 10 kredi var. Sonuç tarayıcıda saklanır, aynı şarkı için tekrar kredi harcanmaz.</p>
+      <div class="settings-field">
+        <label for="karadeoKeyInput">API anahtarı</label>
+        <div class="settings-inline">
+          <input type="password" id="karadeoKeyInput" class="settings-input" placeholder="kd_..." autocomplete="off" spellcheck="false">
+          <button type="button" class="btn btn-quiet" id="karadeoKeySave">Kaydet</button>
+          <button type="button" class="btn btn-quiet" id="karadeoKeyClear">Sil</button>
+        </div>
+        <span class="settings-hint" id="karadeoKeyInfo"></span>
+        <a class="settings-link" href="https://karadeo.com/dashboard" target="_blank" rel="noopener">Anahtarı karadeo.com/dashboard'dan al</a>
+      </div>
+      <div class="settings-field">
+        <label for="karadeoProxyInput">Proxy adresi (isteğe bağlı)</label>
+        <div class="settings-inline">
+          <input type="url" id="karadeoProxyInput" class="settings-input" placeholder="https://karadeo-proxy.kullanici.workers.dev" autocomplete="off" spellcheck="false">
+          <button type="button" class="btn btn-quiet" id="karadeoProxySave">Kaydet</button>
+        </div>
+        <span class="settings-hint">Tarayıcı Karadeo'ya doğrudan bağlanamıyorsa (CORS hatası) kendi küçük proxy'ni buraya yaz. Hazır Cloudflare Worker dosyası: <code>tools/karadeo-proxy.worker.js</code></span>
+      </div>
+    </section>
+
     <button id="closeSettingsBtn" class="btn btn-primary modal-close">Kapat</button>
   </div>
 </div>
@@ -197,10 +227,10 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Flip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
-<script src="common.js?v=20261007b"></script>
-<script src="lyrics-styles.js?v=20261007b"></script>
-<script src="seed-songs.js?v=20261007b"></script>
-<script src="youtube-player.js?v=20261007b"></script>
-<script src="app.js?v=20261007b"></script>
+<script src="common.js?v=20261009a"></script>
+<script src="lyrics-styles.js?v=20261009a"></script>
+<script src="seed-songs.js?v=20261009a"></script>
+<script src="youtube-player.js?v=20261009a"></script>
+<script src="app.js?v=20261009a"></script>
 </body>
 </html>

@@ -309,7 +309,7 @@ const LYRICS_CACHE_PREFIX = "cinla_lyr_";
 const LYRICS_CACHE_INDEX = "cinla_lyr_index";
 const LYRICS_CACHE_MAX = 80;
 const LYRICS_CACHE_VERSION = 2;
-const LYRICS_TTL = { synced: 90 * 864e5, plain: 7 * 864e5, none: 864e5 };
+const LYRICS_TTL = { synced: 90 * 864e5, plain: 7 * 864e5, none: 864e5, ai: 365 * 864e5 };
 
 function lyricsCacheIndex() {
   try { return JSON.parse(localStorage.getItem(LYRICS_CACHE_INDEX)) || []; } catch { return []; }
@@ -326,10 +326,10 @@ function getCachedLyrics(videoId) {
     if (!raw) return null;
     const e = JSON.parse(raw);
     if (!e || e.v !== LYRICS_CACHE_VERSION) return null;
-    const kind = e.synced ? "synced" : e.plain ? "plain" : "none";
+    const kind = e.ai ? "ai" : e.synced ? "synced" : e.plain ? "plain" : "none";
     if (Date.now() - e.at > LYRICS_TTL[kind]) { dropCachedLyrics(videoId); return null; }
     if (kind === "none") return { none: true };
-    return { synced: e.synced || null, plain: e.plain || null, source: e.source || "" };
+    return { synced: e.synced || null, plain: e.plain || null, source: e.source || "", ai: !!e.ai };
   } catch { return null; }
 }
 
@@ -346,6 +346,7 @@ function setCachedLyrics(videoId, result) {
     source: (result && result.source) || "",
     synced: (result && result.synced) || null,
     plain: (result && result.plain) || null,
+    ai: !!(result && result.ai), // yapay zekâ ile üretildi (kredi harcandı): uzun süre saklanır
   };
   const key = LYRICS_CACHE_PREFIX + videoId;
   const write = () => localStorage.setItem(key, JSON.stringify(entry));
@@ -368,4 +369,160 @@ function setCachedLyrics(videoId, result) {
     try { localStorage.removeItem(LYRICS_CACHE_PREFIX + idx.shift()); } catch { /* sessiz geç */ }
   }
   saveLyricsCacheIndex(idx);
+}
+
+
+// ================= Karadeo: yapay zekâ ile söz (hizalama / konuşma tanıma) =================
+// Belge: https://karadeo.com/api/transcribe/doc  (Bearer API anahtarı gerekir, 1 kredi = 1 dakika)
+//  - Hizalama: elimizde düz söz var ama zamanlaması yok -> transcriptText ile sese hizalanır (en doğru yol)
+//  - Çıkarma:  hiç söz yok -> şarkıdan konuşma tanıma ile çıkarılır (müzikli kayıtlarda hata yapabilir)
+const KARADEO_ENDPOINT = "https://karadeo.com/api/transcribe";
+
+class KaradeoError extends Error {
+  constructor(code, userMessage) {
+    super(userMessage);
+    this.code = code;
+    this.userMessage = userMessage;
+  }
+}
+
+// Düz sözü hizalamaya uygun hâle getir: [Nakarat] gibi bölüm etiketleri ve boş satırlar çıkar
+function cleanTranscriptForAlign(plain) {
+  return String(plain || "")
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !/^\[[^\]]*\]$/.test(l))
+    .join("\n");
+}
+
+// Karadeo TTML'i: her zamanlı <span> bir kelimedir (hece birleştirme yapılmaz)
+function parseKaradeoTtml(xml) {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) return [];
+  const lines = [];
+  Array.from(doc.getElementsByTagName("p")).forEach(p => {
+    const leafSpans = Array.from(p.getElementsByTagName("span")).filter(sp => !sp.getElementsByTagName("span").length);
+    const words = [];
+    leafSpans.forEach(sp => {
+      const b = parseTtmlTime(sp.getAttribute("begin"));
+      const e = parseTtmlTime(sp.getAttribute("end"));
+      const text = sp.textContent.replace(/\s+/g, " ").trim();
+      if (text && b !== null) words.push({ t: b, e: e === null ? b + 0.3 : e, text });
+    });
+    let begin = parseTtmlTime(p.getAttribute("begin"));
+    const end = parseTtmlTime(p.getAttribute("end"));
+    if (begin === null && words.length) begin = words[0].t;
+    if (begin === null) return;
+    const text = words.length ? words.map(w => w.text).join(" ") : p.textContent.replace(/\s+/g, " ").trim();
+    if (!text) return;
+    const line = { time: begin, text };
+    if (end !== null) line.end = end;
+    if (words.length >= 2) line.words = words;
+    lines.push(line);
+  });
+  lines.sort((a, b) => a.time - b.time);
+  const result = [];
+  lines.forEach((l, i) => {
+    result.push(l);
+    const next = lines[i + 1];
+    if (l.end != null && next && next.time - l.end >= 6) result.push({ time: l.end, text: "" });
+  });
+  return result;
+}
+
+// LRC (satır) ve "gelişmiş LRC" (<mm:ss.xx> kelime etiketli) biçimleri
+function parseEnhancedLrc(text) {
+  const out = [];
+  const lineRe = /^\s*\[(\d+):(\d+(?:\.\d+)?)\](.*)$/;
+  const tagRe = /<(\d+):(\d+(?:\.\d+)?)>/g;
+  String(text || "").split(/\r?\n/).forEach(raw => {
+    const m = raw.match(lineRe);
+    if (!m) return;
+    const time = Number(m[1]) * 60 + parseFloat(m[2]);
+    const body = m[3];
+    const tags = Array.from(body.matchAll(tagRe));
+    if (tags.length >= 2) {
+      const words = tags.map((tg, i) => {
+        const start = tg.index + tg[0].length;
+        const stop = i + 1 < tags.length ? tags[i + 1].index : body.length;
+        return { t: Number(tg[1]) * 60 + parseFloat(tg[2]), text: body.slice(start, stop).trim() };
+      }).filter(w => w.text);
+      if (words.length >= 2) {
+        out.push({ time, text: words.map(w => w.text).join(" "), words });
+        return;
+      }
+    }
+    const t = body.replace(tagRe, "").trim();
+    out.push({ time, text: t });
+  });
+  out.sort((a, b) => a.time - b.time);
+  // Kelime bitişleri: bir sonraki kelimenin başı, satırın sonuncusu için sonraki satırın başı
+  out.forEach((l, i) => {
+    if (!l.words) return;
+    l.words.forEach((w, k) => {
+      const nextT = l.words[k + 1] ? l.words[k + 1].t : (out[i + 1] ? out[i + 1].time : w.t + 0.8);
+      w.e = Math.max(w.t + 0.08, Math.min(nextT, w.t + 4));
+    });
+  });
+  return out;
+}
+
+// Yanıtı satır listesine çevirir. Ücretsiz planda eklenebilen "karadeo" filigran satırları atılır.
+function parseKaradeoOutput(text) {
+  const t = String(text || "").trim();
+  let lines = [];
+  if (t.startsWith("<")) lines = parseKaradeoTtml(t);
+  if (lines.length < 2) lines = parseEnhancedLrc(t);
+  lines = lines.filter(l => !/karadeo/i.test(l.text));
+  if (lines.length >= 2) return { synced: lines, plain: null };
+  // Zamanlı çıktı çözülemedi: metin varsa düz söz olarak kullan
+  const plain = t.startsWith("<") ? "" : t
+    .replace(/\[[^\]]*\]|<[^>]*>/g, "")
+    .split(/\r?\n/).map(l => l.trim()).filter(l => l && !/karadeo/i.test(l)).join("\n");
+  return { synced: null, plain: plain || null };
+}
+
+// -> { synced, plain }  ya da KaradeoError fırlatır (userMessage Türkçe, ekranda gösterilir)
+async function fetchFromKaradeo(videoId, plainText) {
+  const key = getKaradeoKey();
+  if (!key) throw new KaradeoError("no_key", "Önce Karadeo API anahtarını gir.");
+
+  const body = { fileUrl: `https://www.youtube.com/watch?v=${videoId}`, isWordLevel: true, format: "ttml" };
+  const aligned = cleanTranscriptForAlign(plainText);
+  if (aligned) body.transcriptText = aligned;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 240000);
+  let res, text;
+  try {
+    res = await fetch(getKaradeoProxy() || KARADEO_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    text = await res.text();
+  } catch (e) {
+    if (e && e.name === "AbortError") throw new KaradeoError("timeout", "İşlem 4 dakikadan uzun sürdü. Biraz sonra tekrar dene.");
+    throw new KaradeoError("network", "Karadeo'ya bağlanılamadı. İnterneti kontrol et. Sorun sürerse tarayıcı doğrudan isteğe izin vermiyor olabilir (CORS): Ayarlar'dan bir proxy adresi ekleyebilirsin.");
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!res.ok) {
+    let j = null;
+    try { j = JSON.parse(text); } catch { /* JSON değil */ }
+    const u = j && j.usage;
+    if (res.status === 401) throw new KaradeoError("auth", "Karadeo API anahtarı geçersiz ya da eksik.");
+    if (res.status === 402) throw new KaradeoError("credits", u
+      ? `Krediler yetmiyor: şarkı yaklaşık ${u.mediaDurationMinutes} dk, kalan ${u.remainingMinutes} dk.`
+      : "Krediler bu şarkı için yetmiyor.");
+    if (res.status === 403) throw new KaradeoError("limit", "Karadeo aylık kullanım limitin doldu.");
+    if (res.status === 400) throw new KaradeoError("bad", (j && j.error) || "Karadeo isteği kabul etmedi (video indirilemedi ya da süre okunamadı).");
+    throw new KaradeoError("server", "Karadeo işlemi tamamlayamadı (kredi harcanmadı). Biraz sonra tekrar dene.");
+  }
+
+  const r = parseKaradeoOutput(text);
+  if (!r.synced && !r.plain) throw new KaradeoError("empty", "Karadeo söz bulamadı. Şarkıda net bir vokal olmayabilir.");
+  return r;
 }
