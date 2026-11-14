@@ -85,6 +85,7 @@ const coverImg = document.getElementById("coverImg");
 const trackTitle = document.getElementById("trackTitle");
 const trackChannel = document.getElementById("trackChannel");
 const playerStatus = document.getElementById("playerStatus");
+const upNext = document.getElementById("upNext");
 const seekBar = document.getElementById("seekBar");
 const curTimeEl = document.getElementById("curTime");
 const durTimeEl = document.getElementById("durTime");
@@ -113,6 +114,7 @@ let ytPlayer = null;
 let isPlaying = false;
 let isSeeking = false;
 let shuffleOn = false;
+let plannedNextId = null;
 let repeatOn = false;
 let progressInterval = null;
 let lastVolume = 100;
@@ -179,7 +181,7 @@ function applyTrackMeta(track) {
   coverImg.src = cover;
   trackTitle.textContent = track.title;
   trackChannel.textContent = track.channel || "";
-  document.title = `${track.title} — Nowtify`;
+  document.title = `${track.title} — Çınla`;
 }
 
 // ================= YouTube Player =================
@@ -187,6 +189,11 @@ function initPlayer() {
   if (!current.id) {
     trackTitle.textContent = "Şarkı bulunamadı";
     playerStatus.textContent = "Geçersiz bağlantı — lütfen listeye dönüp tekrar dene.";
+    return;
+  }
+  if (!isApprovedMusicVideo(current.id)) {
+    trackTitle.textContent = "Müzik dışı video engellendi";
+    playerStatus.textContent = "Çınla yalnızca müzik kategorisindeki YouTube videolarını oynatır. Listeye dönüp müzik seç.";
     return;
   }
 
@@ -278,11 +285,16 @@ function findQueueIndex() {
 }
 
 function goToTrack(song) {
+  if (!isApprovedMusicVideo(song.id)) {
+    playerStatus.textContent = "Müzik kategorisinde olmadığı için bu video atlandı.";
+    return;
+  }
   if (progressInterval) {
     clearInterval(progressInterval);
     progressInterval = null;
   }
   current = { id: song.id, title: song.title, channel: song.channel || "" };
+  plannedNextId = null;
   cleanUrl(current.id);
 
   applyTrackMeta(current);
@@ -305,14 +317,19 @@ function goToTrack(song) {
 
 function playNext() {
   if (!queue.length) return;
+  const next = getNextTrack();
+  if (next) goToTrack(next);
+}
+
+function getNextTrack() {
+  if (!queue.length) return null;
   const idx = findQueueIndex();
-  let nextIdx;
   if (shuffleOn) {
-    nextIdx = Math.floor(Math.random() * queue.length);
-  } else {
-    nextIdx = idx === -1 ? 0 : (idx + 1) % queue.length;
+    const planned = queue.find(song => song.id === plannedNextId && song.id !== current.id);
+    const choices = queue.filter(song => song.id !== current.id);
+    return planned || choices[Math.floor(Math.random() * choices.length)] || queue[0];
   }
-  goToTrack(queue[nextIdx]);
+  return queue[idx === -1 ? 0 : (idx + 1) % queue.length];
 }
 
 function playPrev() {
@@ -342,6 +359,11 @@ function handleTrackEnded() {
 
 // ================= Çalma Sırası Paneli =================
 function renderQueuePanel() {
+  const nextSong = getNextTrack();
+  plannedNextId = shuffleOn ? nextSong?.id || null : plannedNextId;
+  if (upNext) upNext.innerHTML = nextSong && nextSong.id !== current.id
+    ? `<span class="up-next-label">SIRADAKİ</span><strong>${escapeHtml(nextSong.title)}</strong><small>${escapeHtml(nextSong.channel || "")}</small>`
+    : `<span class="up-next-label">SIRADAKİ</span><strong>Listenin son şarkısı</strong>`;
   if (!queue.length) {
     queueList.innerHTML = `<div class="queue-empty">Çalma sırası boş. Listeye dönüp bir şarkı seçtiğinde burada görünecek.</div>`;
     return;
@@ -356,7 +378,7 @@ function renderQueuePanel() {
         <p class="queue-item-title">${escapeHtml(song.title)}</p>
         <p class="queue-item-channel">${escapeHtml(song.channel || "")}</p>
       </div>
-      ${song.id === current.id ? '<span class="queue-now-badge">Çalıyor</span>' : ""}
+      ${song.id === current.id ? '<span class="queue-now-badge">Çalıyor</span>' : song.id === nextSong?.id ? '<span class="queue-now-badge next-badge">Sıradaki</span>' : ""}
     `;
     row.addEventListener("click", () => {
       if (song.id !== current.id) goToTrack(song);
@@ -907,7 +929,9 @@ function init() {
 
   shuffleBtn.addEventListener("click", () => {
     shuffleOn = !shuffleOn;
+    plannedNextId = null;
     shuffleBtn.classList.toggle("active", shuffleOn);
+    renderQueuePanel();
   });
 
   repeatBtn.addEventListener("click", () => {

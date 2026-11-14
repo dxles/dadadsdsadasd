@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0F1733">
+<meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Çınla">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <title>Nowtify Player</title>
-  <link rel="stylesheet" href="player.css?v=20261009a">
-  <link rel="stylesheet" href="lyrics-styles.css?v=20261009a">
+  <title>Çınla — Şimdi Çalıyor</title>
+  <link rel="stylesheet" href="player.css?v=20261114c">
+  <link rel="stylesheet" href="lyrics-styles.css?v=20261114c">
   <!-- GSAP Animasyon Kütüphanesi -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
@@ -35,6 +35,7 @@
         <div class="track-title" id="trackTitle">Şarkı Yükleniyor...</div>
         <div class="track-channel" id="trackChannel">Sanatçı</div>
         <div class="player-status" id="playerStatus"></div>
+        <div class="up-next" id="upNext" aria-live="polite"></div>
         <div class="progress-area">
           <div class="wave" id="waveBars" aria-hidden="true"></div>
           <input type="range" id="seekBar" value="0" min="0" max="100">
@@ -154,13 +155,14 @@
   </div>
 
   <!-- Ortak depolama/yardımcı fonksiyonlar -->
-  <script src="common.js?v=20261009a"></script>
+  <script src="common.js?v=20261114c"></script>
   <!-- Şarkı sözü sağlayıcıları (LRCLIB + Musixmatch) ve görünümleri -->
-  <script src="lyrics-providers.js?v=20261009a"></script>
-  <script src="lyrics-styles.js?v=20261009a"></script>
+  <script src="lyrics-providers.js?v=20261114c"></script>
+  <script src="lyrics-styles.js?v=20261114c"></script>
   <!-- YouTube Player Yükleyici Scripti -->
-  <script src="youtube-player.js?v=20261009a"></script>
+  <script src="youtube-player.js?v=20261114c"></script>
   <!-- Ana JavaScript Dosyamız -->
-  <script src="player.js?v=20261009a"></script>
+  <script src="player.js?v=20261114c"></script>
 </body>
 </html>
+

@@ -169,12 +169,12 @@ input { font-family: inherit; }
     height: 13px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 0 0 0 rgba(29,185,84,0.3);
+    box-shadow: 0 0 0 0 rgba(255,243,161,0.3);
     transition: box-shadow 0.15s ease;
 }
 
 .progress-area input[type="range"]:hover::-webkit-slider-thumb {
-    box-shadow: 0 0 0 8px rgba(29,185,84,0.2);
+    box-shadow: 0 0 0 8px rgba(255,243,161,0.2);
 }
 
 .progress-area input[type="range"]::-moz-range-thumb {
@@ -419,7 +419,7 @@ input { font-family: inherit; }
 .queue-item:hover { background: rgba(255,255,255,0.06); }
 
 .queue-item.active {
-    background: rgba(29,185,84,0.14);
+    background: rgba(255,243,161,0.14);
 }
 
 .queue-item img {
@@ -456,7 +456,7 @@ input { font-family: inherit; }
     font-size: 10px;
     font-weight: 700;
     color: var(--spotify-green);
-    background: rgba(29,185,84,0.16);
+    background: rgba(255,243,161,0.16);
     padding: 3px 8px;
     border-radius: 20px;
 }
@@ -572,6 +572,49 @@ body.hud-hidden .controls {
     .now-row { flex-direction: column; text-align: center; gap: 20px; }
     .cover-wrap { width: 220px; height: 220px; }
 }
+
+/* Çınla player palette: shares the library's moss, lime and mint colors. */
+:root {
+    --spotify-green: #8D8904;
+    --dark-bg: #000000;
+    --dark-card: #111000;
+    --dark-hover: #252300;
+    --text-primary: #fffef0;
+    --text-secondary: #d0cda5;
+    --danger: #ff8175;
+    --radius: 16px;
+}
+.bg-overlay { background: linear-gradient(146deg, rgba(0,0,0,.94) 0%, rgba(0,0,0,.72) 23%, rgba(141,137,4,.62) 100%); }
+.cover-wrap { border: 1px solid rgba(239,244,225,.12); border-radius: 19px; }
+.back-link, .corner-btn { background: rgba(27,33,24,.82); border: 1px solid rgba(239,244,225,.1); backdrop-filter: blur(14px); }
+.back-link:hover, .corner-btn:hover { background: #252300; }
+.queue-panel { background: rgba(23,28,20,.97); border-left-color: rgba(239,244,225,.1); }
+.queue-item.active { background: rgba(255,243,161,.12); }
+.queue-item.active .queue-item-title { color: var(--spotify-green); }
+.queue-now-badge { color: var(--spotify-green); background: rgba(255,243,161,.13); }
+.controls { background: rgba(27,33,24,.9); border-color: rgba(239,244,225,.12); }
+.ctrl-btn.play-btn { color: #0c0b00; background: var(--spotify-green); }
+.ctrl-btn.play-btn:hover { color: #0c0b00; background: #aaa506; }
+.ctrl-btn.toggle-btn.active { color: var(--spotify-green); }
+.lyrics-style-menu, .ai-box { background: rgba(27,33,24,.96); border-color: rgba(239,244,225,.12); }
+.lsm-opt.selected { background: rgba(255,243,161,.12); }
+.lsm-opt .lsm-check { color: var(--spotify-green); }
+.lsm-chip.selected { color: #0c0b00; background: var(--spotify-green); border-color: var(--spotify-green); }
+.ai-key-row input { background: rgba(255,255,255,.07); }
+.ai-btn.primary { color: #0c0b00; background: var(--spotify-green); }
+.ai-btn.primary:hover { background: #aaa506; }
+.ai-link { color: #e2dc72; }
+.up-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 8px; min-height: 18px; color: var(--text-secondary); font-size: 11px; }
+.up-next-label { color: var(--spotify-green); font-size: 9px; font-weight: 800; letter-spacing: .16em; }
+.up-next strong { max-width: 30ch; overflow: hidden; color: var(--text-primary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.up-next small { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.next-badge { color: #000; background: #8D8904; }
+.lyrics-container.lyrics-list-mode { scrollbar-color: #8D8904 transparent; }
+.back-link:hover, .corner-btn:hover { background: #252300; }
+.lyrics-container.lyrics-list-mode { scrollbar-color: #8D8904 transparent; }
+body[data-layout="soundcloud"] .progress-area input[type="range"]:hover { background: linear-gradient(90deg, #8D8904 var(--p), rgba(255,255,255,0.22) var(--p)); }
+body[data-layout="soundcloud"] #curTime { color: #8D8904; }
+.lr-style-soundcloud .lr-line { --sc: #8D8904; --sc-hi: #eee889; }
 
 @media (max-width: 560px) {
     .controls { gap: 4px; padding: 8px 10px; }
@@ -739,7 +782,7 @@ body.hud-hidden .controls {
     body[data-layout="soundcloud"] .wave {
         display: block;
         width: 100%; height: 72px;
-        background: linear-gradient(90deg, #ff5500 var(--p), rgba(255,255,255,0.38) var(--p));
+        background: linear-gradient(90deg, #8D8904 var(--p), rgba(255,255,255,0.38) var(--p));
         -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
         -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     }
@@ -751,7 +794,7 @@ body.hud-hidden .controls {
         background: transparent;
     }
     body[data-layout="soundcloud"] .time-row { font-size: 11px; font-weight: 600; }
-    body[data-layout="soundcloud"] #curTime { color: #ff5500; }
+    body[data-layout="soundcloud"] #curTime { color: #8D8904; }
 }
 
 
@@ -769,7 +812,7 @@ body.hud-hidden .controls {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 .lsm-chip:hover { background: rgba(255,255,255,0.14); }
-.lsm-chip.selected { background: rgba(29,185,84,0.18); border-color: var(--spotify-green); color: #fff; }
+.lsm-chip.selected { background: rgba(255,243,161,0.18); border-color: var(--spotify-green); color: #fff; }
 
 
 /* ================= Telefon: sözler =================
@@ -906,7 +949,7 @@ body.hud-hidden .controls {
     border-radius: 8px;
 }
 .ai-key-row input:focus { outline: none; border-color: var(--spotify-green); }
-.ai-link { display: inline-block; margin-top: 8px; font-size: 12px; color: #6fd8c6; text-decoration: underline; }
+.ai-link { display: inline-block; margin-top: 8px; font-size: 12px; color: #e2dc72; text-decoration: underline; }
 .ai-actions { display: flex; gap: 8px; margin-top: 12px; }
 .ai-btn {
     padding: 8px 14px;
@@ -934,3 +977,11 @@ body.hud-hidden .controls {
     .ai-box { display: none; }
     body.lyrics-open .ai-box:not(.hidden) { display: block; left: 20px; right: 20px; bottom: 176px; width: auto; z-index: 60; }
 }
+
+/* Keep the final controls and panels on the shared Çınla palette. */
+.lsm-opt.selected { background: rgba(255,243,161,.12); }
+.lsm-chip.selected { color: #0c0b00; background: var(--spotify-green); border-color: var(--spotify-green); }
+.ai-btn.primary { color: #0c0b00; background: var(--spotify-green); }
+.ai-btn.primary:hover { background: #aaa506; }
+.ai-link { color: #e2dc72; }
+

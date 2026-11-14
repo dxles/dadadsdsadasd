@@ -144,8 +144,6 @@ const sectionTitle = document.getElementById("sectionTitle");
 const searchInput = document.getElementById("searchInput");
 const searchBtn = document.getElementById("searchBtn");
 const genreButtons = document.querySelectorAll(".genre-btn");
-const apiKeyInput = document.getElementById("apiKeyInput");
-const saveKeyBtn = document.getElementById("saveKeyBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 const addSongBtn = document.getElementById("addSongBtn");
 const addModal = document.getElementById("addModal");
@@ -153,12 +151,195 @@ const closeModalBtn = document.getElementById("closeModalBtn");
 const addSearchInput = document.getElementById("addSearchInput");
 const addSearchBtn = document.getElementById("addSearchBtn");
 const addResults = document.getElementById("addResults");
-const apiHelpBtn = document.getElementById("apiHelpBtn");
-const apiHelpModal = document.getElementById("apiHelpModal");
-const closeApiHelpBtn = document.getElementById("closeApiHelpBtn");
 const newPlaylistBtn = document.getElementById("newPlaylistBtn");
 const playlistList = document.getElementById("playlistList");
+const dailyGrid = document.getElementById("dailyGrid");
+const homePlaylistsGrid = document.getElementById("homePlaylistsGrid");
+const googleConnectBtn = document.getElementById("googleConnectBtn");
+const spotifyConnectBtn = document.getElementById("spotifyConnectBtn");
+const googleConnectLabel = document.getElementById("googleConnectLabel");
+const spotifyConnectLabel = document.getElementById("spotifyConnectLabel");
+const connectionStatus = document.getElementById("connectionStatus");
+let remoteCollections = [];
+
+function readRemoteCollections() {
+  try { return JSON.parse(localStorage.getItem("cinla_remote_collections") || "[]"); } catch { return []; }
+}
+function saveRemoteCollections(collections) {
+  remoteCollections = collections;
+  localStorage.setItem("cinla_remote_collections", JSON.stringify(collections.map(({ songs, ...meta }) => meta)));
+}
+function renderHomeCollections() {
+  if (!homePlaylistsGrid) return;
+  homePlaylistsGrid.innerHTML = "";
+  if (!remoteCollections.length) {
+    homePlaylistsGrid.innerHTML = `<div class="daily-placeholder">Google veya Spotify hesabını bağlayınca listelerin burada görünür.</div>`;
+    return;
+  }
+  remoteCollections.forEach(collection => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "home-playlist-card";
+    const art = collection.image
+      ? `<img src="${escapeHtml(collection.image)}" alt="" loading="lazy">`
+      : `<span class="home-playlist-art ${collection.source.startsWith("spotify") ? "spotify-art" : "youtube-art"}" aria-hidden="true">${collection.source.startsWith("spotify") ? "♫" : "▶"}</span>`;
+    card.innerHTML = `${art}<span class="home-playlist-name">${escapeHtml(collection.name)}</span><small>${collection.count || 0} şarkı · ${collection.source.startsWith("spotify") ? "Spotify" : "YouTube Music"}</small>`;
+    card.addEventListener("click", () => selectPlaylist(collection.id, collection.name));
+    homePlaylistsGrid.appendChild(card);
+  });
+}
+function uniqueSongs(songs) { return [...new Map(songs.filter(Boolean).map(song => [song.id, song])).values()]; }
+
+async function connectGoogleAndSync() {
+  googleConnectBtn.disabled = true;
+  try {
+    connectionStatus.textContent = "Google hesabı bağlanıyor…";
+    await CinlaGoogle.getGoogleAccessToken(!CinlaGoogle.isConnected());
+    googleConnectLabel.textContent = "Google bağlı · yenile";
+    await syncYouTubeCollections();
+    await loadDailyHits();
+  } catch (error) { connectionStatus.textContent = error.message; }
+  finally { googleConnectBtn.disabled = false; }
+}
+
+async function fetchYouTubePages(url) {
+  const result = [];
+  let next = url;
+  while (next) {
+    const response = await CinlaGoogle.youtubeFetch(next);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "YouTube isteği başarısız.");
+    result.push(...(data.items || []));
+    next = data.nextPageToken ? `${url}&pageToken=${encodeURIComponent(data.nextPageToken)}` : "";
+  }
+  return result;
+}
+
+async function fetchSpotifyPages(url) {
+  const items = [];
+  let next = url;
+  while (next) {
+    const response = await CinlaSpotify.spotifyFetch(next);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Spotify verileri yüklenemedi.");
+    items.push(...(data.items || []));
+    next = data.next || "";
+  }
+  return items;
+}
+
+async function onlyMusicVideos(songs) {
+  const valid = [];
+  for (let i = 0; i < songs.length; i += 50) {
+    const batch = songs.slice(i, i + 50);
+    const ids = batch.map(song => song.id).join(",");
+    if (!ids) continue;
+    const response = await CinlaGoogle.youtubeFetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(ids)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Video türü doğrulanamadı.");
+    const music = new Set((data.items || []).filter(item => item.snippet?.categoryId === "10").map(item => item.id));
+    valid.push(...batch.filter(song => music.has(song.id)));
+  }
+  const approved = uniqueSongs(valid);
+  markMusicVideoIds(approved.map(song => song.id));
+  return approved;
+}
+
+async function loadYouTubePlaylistSongs(playlistId) {
+  const items = await fetchYouTubePages(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${encodeURIComponent(playlistId)}&maxResults=50`);
+  const songs = items.map(item => ({
+    id: item.snippet?.resourceId?.videoId,
+    title: decodeHtmlEntities(item.snippet?.title || ""),
+    channel: decodeHtmlEntities(item.snippet?.videoOwnerChannelTitle || item.snippet?.channelTitle || ""),
+    thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url,
+    genre: "benim",
+  })).filter(song => song.id && song.title !== "Deleted video" && song.title !== "Private video");
+  return onlyMusicVideos(songs);
+}
+
+async function syncYouTubeCollections() {
+  connectionStatus.textContent = "YouTube Music listelerin ve beğenilerin yükleniyor…";
+  const [playlistItems, likedItems] = await Promise.all([
+    fetchYouTubePages("https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50"),
+    fetchYouTubePages("https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50"),
+  ]);
+  const collections = playlistItems.map(item => ({ id: `yt_${item.id}`, source: "youtube", remoteId: item.id, name: item.snippet?.title || "YouTube listesi", count: item.contentDetails?.itemCount || 0, image: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url, songs: [] }));
+  const likes = await onlyMusicVideos(likedItems.map(item => ({ id: item.id, title: decodeHtmlEntities(item.snippet?.title || ""), channel: decodeHtmlEntities(item.snippet?.channelTitle || ""), thumbnail: item.snippet?.thumbnails?.medium?.url, genre: "benim" })));
+  collections.unshift({ id: "yt_liked", source: "youtube-liked", name: "YouTube’da beğendiklerim", count: likes.length, songs: likes });
+  remoteCollections = [...readRemoteCollections().filter(item => item.source?.startsWith("spotify")), ...collections];
+  saveRemoteCollections(remoteCollections);
+  renderPlaylistNav();
+  connectionStatus.textContent = `${collections.length - 1} YouTube listesi ve ${likes.length} müzik beğenisi eşitlendi. Oyun videoları gizlendi.`;
+}
+
+async function loadYouTubeLikedSongs() {
+  const items = await fetchYouTubePages("https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50");
+  return onlyMusicVideos(items.map(item => ({ id: item.id, title: decodeHtmlEntities(item.snippet?.title || ""), channel: decodeHtmlEntities(item.snippet?.channelTitle || ""), thumbnail: item.snippet?.thumbnails?.medium?.url, genre: "benim" })));
+}
+
+async function loadDailyHits() {
+  dailyGrid.innerHTML = `<div class="daily-placeholder">Türkiye müzik listesi yükleniyor…</div>`;
+  const response = await CinlaGoogle.youtubeFetch("https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&regionCode=TR&videoCategoryId=10&maxResults=12");
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || "Günlük müzik listesi yüklenemedi.");
+  const songs = (data.items || []).map(item => ({ id: item.id, title: decodeHtmlEntities(item.snippet.title), channel: decodeHtmlEntities(item.snippet.channelTitle), thumbnail: item.snippet.thumbnails?.medium?.url, genre: "pop" }));
+  markMusicVideoIds(songs.map(song => song.id));
+  renderDailyGrid(songs);
+}
+
+function renderDailyGrid(songs) {
+  dailyGrid.innerHTML = "";
+  songs.forEach((song, index) => {
+    const card = document.createElement("a");
+    card.className = "daily-card";
+    card.href = `player.html?v=${encodeURIComponent(song.id)}`;
+    card.innerHTML = `<span class="daily-rank">${String(index + 1).padStart(2, "0")}</span><img src="${escapeHtml(song.thumbnail || `https://i.ytimg.com/vi/${song.id}/mqdefault.jpg`)}" alt="" loading="lazy"><span class="daily-track"><strong>${escapeHtml(song.title)}</strong><small>${escapeHtml(song.channel)}</small></span><span class="daily-play">▶</span>`;
+    card.addEventListener("click", () => saveQueue(songs, "Türkiye günlük müzik listesi"));
+    dailyGrid.appendChild(card);
+  });
+}
+
+async function connectSpotifyAndSync() {
+  try {
+    await CinlaSpotify.ready;
+    if (!CinlaSpotify.isConnected()) { await CinlaSpotify.connectSpotify(); return; }
+    connectionStatus.textContent = "Spotify listelerin ve beğenilerin yükleniyor…";
+    const [playlistItems, savedItems] = await Promise.all([
+      fetchSpotifyPages("https://api.spotify.com/v1/me/playlists?limit=50"),
+      fetchSpotifyPages("https://api.spotify.com/v1/me/tracks?limit=50"),
+    ]);
+    const collections = playlistItems.map(item => ({ id: `sp_${item.id}`, source: "spotify", remoteId: item.id, name: item.name, count: item.items?.total || item.tracks?.total || 0, image: item.images?.[0]?.url, externalUrl: item.external_urls?.spotify, songs: [] }));
+    const liked = savedItems.map(row => spotifyTrackToSong(row.track || row.item)).filter(Boolean);
+    collections.unshift({ id: "sp_liked", source: "spotify-liked", name: "Spotify’da beğendiklerim", count: liked.length, songs: liked });
+    remoteCollections = [...readRemoteCollections().filter(item => item.source?.startsWith("youtube")), ...collections];
+    saveRemoteCollections(remoteCollections);
+    renderPlaylistNav();
+    connectionStatus.textContent = `${collections.length - 1} Spotify listesi ve ${liked.length} beğeni yüklendi.`;
+    spotifyConnectLabel.textContent = "Spotify bağlı · yenile";
+  } catch (error) { connectionStatus.textContent = error.message; }
+}
+
+function spotifyTrackToSong(track) {
+  if (!track?.id) return null;
+  return { id: `spotify_${track.id}`, source: "spotify", externalUrl: track.external_urls?.spotify || `https://open.spotify.com/track/${track.id}`, thumbnail: track.album?.images?.[0]?.url || "", title: track.name || "İsimsiz şarkı", channel: (track.artists || []).map(artist => artist.name).join(", "), genre: "benim" };
+}
+
+async function loadSpotifyPlaylistSongs(collection) {
+  const songs = [];
+  let url = `https://api.spotify.com/v1/playlists/${encodeURIComponent(collection.remoteId)}/items?limit=50`;
+  while (url) {
+    const response = await CinlaSpotify.spotifyFetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Spotify listesi okunamadı.");
+    songs.push(...(data.items || []).map(row => spotifyTrackToSong(row.item)).filter(Boolean));
+    url = data.next || "";
+  }
+  return songs;
+}
 const contentEl = document.getElementById("content");
+const featurePlayBtn = document.getElementById("featurePlayBtn");
+const featureRadioBtn = document.getElementById("featureRadioBtn");
+const featureExploreBtn = document.getElementById("featureExploreBtn");
 const brandName = document.getElementById("brandName");
 const spotifyImportInput = document.getElementById("spotifyImportInput");
 const spotifyImportBtn = document.getElementById("spotifyImportBtn");
@@ -234,19 +415,37 @@ function scrollContentToTop() {
 
 // ---- Başlangıç ----
 function init() {
-  apiKeyInput.value = getApiKey();
-  // Eski sürümde kaydedilmiş Spotify Client ID / Secret artık gerekmiyor, temizle.
-  try {
-    localStorage.removeItem("cinla_spotify_client_id");
-    localStorage.removeItem("cinla_spotify_client_secret");
-  } catch (_) { /* yok say */ }
+  remoteCollections = readRemoteCollections();
 
   const cached = getCachedSongs();
   allSongs = cached && cached.length ? cached : SEED_SONGS.slice();
+  markMusicVideoIds(allSongs.map(song => song.id));
 
   renderPlaylistNav();
   renderGrid();
   initMiniPlayer();
+  if (CinlaGoogle.isConnected()) googleConnectLabel.textContent = "Google bağlı · eşitle";
+
+  featurePlayBtn?.addEventListener("click", () => {
+    const firstSong = lastRenderedSongs[0];
+    if (!firstSong) {
+      setStatus("Önce koleksiyonuna birkaç şarkı ekle.");
+      return;
+    }
+    if (firstSong.source === "spotify") { window.open(firstSong.externalUrl, "_blank", "noopener"); return; }
+    saveQueue(lastRenderedSongs);
+    window.location.href = `player.html?v=${encodeURIComponent(firstSong.id)}`;
+  });
+  featureRadioBtn?.addEventListener("click", () => {
+    const pool = uniqueSongs([...allSongs, ...getUserSongs(), ...remoteCollections.filter(item => item.source.startsWith("youtube")).flatMap(item => item.songs || [])]).filter(song => song.source !== "spotify" && isApprovedMusicVideo(song.id));
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    if (!pool.length) { setStatus("Karışık radyo için müzik bulunamadı."); return; }
+    saveQueue(pool, "Karışık radyo");
+    window.location.href = `player.html?v=${encodeURIComponent(pool[0].id)}`;
+  });
+  featureExploreBtn?.addEventListener("click", () => {
+    document.getElementById("songGrid")?.scrollIntoView({ behavior: motionOK() ? "smooth" : "auto", block: "start" });
+  });
 
   document.addEventListener("click", (e) => {
     if (openMenuId && !e.target.closest(".card-add-menu") && !e.target.closest(".card-add-btn")) {
@@ -260,6 +459,7 @@ function init() {
   songGrid.addEventListener("click", (e) => {
     const link = e.target.closest("a.song-card-link");
     if (!link || !songGrid.contains(link)) return;
+    if (link.classList.contains("external-track-link")) return;
     saveQueue(lastRenderedSongs);
   });
 
@@ -284,12 +484,18 @@ function init() {
   searchBtn.addEventListener("click", doSiteSearch);
   searchInput.addEventListener("keydown", e => { if (e.key === "Enter") doSiteSearch(); });
 
-  saveKeyBtn.addEventListener("click", () => {
-    setApiKey(apiKeyInput.value.trim());
-    setStatus("YouTube API anahtarı kaydedildi.");
-  });
 
   refreshBtn.addEventListener("click", refreshFromYouTube);
+  googleConnectBtn?.addEventListener("click", connectGoogleAndSync);
+  spotifyConnectBtn?.addEventListener("click", connectSpotifyAndSync);
+  if (CinlaSpotify.isConnected()) spotifyConnectLabel.textContent = "Spotify bağlı · eşitle";
+  CinlaSpotify.ready.catch(error => { if (connectionStatus) connectionStatus.textContent = error.message; });
+  CinlaSpotify.ready.then(() => {
+    if (sessionStorage.getItem("cinla_spotify_just_connected") === "1") {
+      sessionStorage.removeItem("cinla_spotify_just_connected");
+      connectSpotifyAndSync();
+    }
+  }).catch(() => {});
 
   spotifyImportBtn.addEventListener("click", doSpotifyImport);
   spotifyImportInput.addEventListener("keydown", e => { if (e.key === "Enter") doSpotifyImport(); });
@@ -319,28 +525,6 @@ function init() {
   addModal.addEventListener("click", e => { if (e.target === addModal) closeAddModal(); });
   addSearchBtn.addEventListener("click", doAddSearch);
   addSearchInput.addEventListener("keydown", e => { if (e.key === "Enter") doAddSearch(); });
-
-  // ---- API anahtarı nasıl alınır yardım modalı ----
-  function openApiHelp() {
-    apiHelpModal.classList.remove("hidden");
-    if (motionOK()) {
-      gsap.fromTo(apiHelpModal, { opacity: 0 }, { opacity: 1, duration: 0.2 });
-      gsap.fromTo(apiHelpModal.querySelector(".modal-box"), { opacity: 0, y: 12, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "power2.out" });
-    }
-  }
-
-  function closeApiHelp() {
-    if (motionOK()) {
-      gsap.to(apiHelpModal.querySelector(".modal-box"), { opacity: 0, y: 8, scale: 0.97, duration: 0.2, ease: "power1.in" });
-      gsap.to(apiHelpModal, { opacity: 0, duration: 0.2, onComplete: () => apiHelpModal.classList.add("hidden") });
-    } else {
-      apiHelpModal.classList.add("hidden");
-    }
-  }
-
-  apiHelpBtn.addEventListener("click", openApiHelp);
-  closeApiHelpBtn.addEventListener("click", closeApiHelp);
-  apiHelpModal.addEventListener("click", e => { if (e.target === apiHelpModal) closeApiHelp(); });
 
   // ---- Ayarlar: şarkı sözü animasyonu seçimi + canlı önizleme ----
   const settingsBtn = document.getElementById("settingsBtn");
@@ -549,10 +733,6 @@ function init() {
     if (e.key === "Escape" && !settingsModal.classList.contains("hidden")) closeSettings();
   });
 
-  // İlk ziyarette anahtar yoksa yardım modalını otomatik göster
-  if (!getApiKey()) {
-    openApiHelp();
-  }
 }
 
 function setActiveNav(activeBtn) {
@@ -567,15 +747,39 @@ function selectPlaylist(id, name) {
   setActiveNav(null);
   const btn = playlistList.querySelector(`[data-playlist-id="${id}"] .playlist-btn`);
   if (btn) btn.classList.add("active");
-  renderGrid();
+  const remote = remoteCollections.find(item => item.id === id);
+  if (remote && !remote.songs?.length && remote.source === "youtube") {
+    setStatus("YouTube Music listesi yükleniyor…");
+    loadYouTubePlaylistSongs(remote.remoteId).then(songs => {
+      remote.songs = songs;
+      saveRemoteCollections(remoteCollections);
+      setStatus(`${songs.length} müzik videosu yüklendi. Oyun videoları listelenmedi.`);
+      renderGrid();
+    }).catch(error => setStatus(error.message));
+  } else if (remote && !remote.songs?.length && remote.source === "youtube-liked") {
+    setStatus("Müzik beğenilerin yükleniyor…");
+    loadYouTubeLikedSongs().then(songs => { remote.songs = songs; setStatus(`${songs.length} müzik beğenisi yüklendi.`); renderGrid(); }).catch(error => setStatus(error.message));
+  } else if (remote && !remote.songs?.length && remote.source === "spotify") {
+    setStatus("Spotify listesi yükleniyor…");
+    loadSpotifyPlaylistSongs(remote).then(songs => {
+      remote.songs = songs;
+      setStatus(`${songs.length} Spotify parçası listelendi.`);
+      renderGrid();
+    }).catch(error => setStatus(error.message));
+  } else if (remote && !remote.songs?.length && remote.source === "spotify-liked") {
+    setStatus("Spotify beğenilerin yükleniyor…");
+    fetchSpotifyPages("https://api.spotify.com/v1/me/tracks?limit=50").then(rows => { remote.songs = rows.map(row => spotifyTrackToSong(row.track || row.item)).filter(Boolean); setStatus(`${remote.songs.length} Spotify beğenisi listelendi.`); renderGrid(); }).catch(error => setStatus(error.message));
+  } else renderGrid();
   scrollContentToTop();
 }
 
 // ---- Sidebar: çalma listeleri ----
 function renderPlaylistNav() {
+  remoteCollections = remoteCollections.length ? remoteCollections : readRemoteCollections();
   const playlists = getPlaylists();
-  if (!playlists.length) {
+  if (!playlists.length && !remoteCollections.length) {
     playlistList.innerHTML = `<div class="playlist-empty-hint">Henüz çalma listen yok.</div>`;
+    renderHomeCollections();
     return;
   }
   playlistList.innerHTML = "";
@@ -603,6 +807,16 @@ function renderPlaylistNav() {
     });
     playlistList.appendChild(row);
   });
+  remoteCollections.forEach(collection => {
+    const row = document.createElement("div");
+    row.className = "playlist-item remote-playlist-item";
+    row.dataset.playlistId = collection.id;
+    const provider = collection.source.startsWith("spotify") ? "SP" : "YT";
+    row.innerHTML = `<button class="playlist-btn" data-playlist-id="${escapeHtml(collection.id)}"><span class="remote-provider">${provider}</span>${escapeHtml(collection.name)}</button>`;
+    row.querySelector(".playlist-btn").addEventListener("click", () => selectPlaylist(collection.id, collection.name));
+    playlistList.appendChild(row);
+  });
+  renderHomeCollections();
 }
 
 function closeAllCardMenus() {
@@ -673,10 +887,14 @@ function renderGrid(list) {
   } else if (currentGenre.startsWith("pl_")) {
     const pl = playlists.find(p => p.id === currentGenre);
     songs = pl ? pl.songs : [];
+  } else if (currentGenre.startsWith("yt_") || currentGenre.startsWith("sp_")) {
+    const collection = remoteCollections.find(item => item.id === currentGenre);
+    songs = collection?.songs || [];
   } else {
     songs = [...userSongs, ...allSongs].filter(s => s.genre === currentGenre);
   }
 
+  songs = songs.filter(song => song.source === "spotify" || isApprovedMusicVideo(song.id));
   lastRenderedSongs = songs;
   closeAllCardMenus();
 
@@ -699,9 +917,11 @@ function renderGrid(list) {
     // Tekrarlı şarkılarda aynı flip kimliği çakışmasın.
     card.dataset.flipId = seenIds.has(song.id) ? `${song.id}-${seenIds.size}` : song.id;
     seenIds.add(song.id);
-    const thumb = `https://i.ytimg.com/vi/${song.id}/mqdefault.jpg`;
+    const thumb = song.thumbnail || `https://i.ytimg.com/vi/${encodeURIComponent(song.id)}/mqdefault.jpg`;
+    const isExternal = song.source === "spotify";
+    const songHref = isExternal ? song.externalUrl : `player.html?v=${encodeURIComponent(song.id)}`;
     card.innerHTML = `
-      <a class="song-card-link" href="player.html?v=${encodeURIComponent(song.id)}">
+      <a class="song-card-link${isExternal ? " external-track-link" : ""}" href="${escapeHtml(songHref)}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ""}>
         <div class="track-thumb">
           <img src="${thumb}" alt="" loading="lazy">
           <div class="track-play" aria-hidden="true"><span>${PLAY_GLYPH}</span></div>
@@ -755,166 +975,75 @@ function doSiteSearch() {
 
 // ---- YouTube API üzerinden yenileme ----
 async function refreshFromYouTube() {
-  const key = getApiKey();
-  if (!key) {
-    setStatus("Önce sol alttan kendi YouTube API anahtarını gir ve kaydet.");
-    return;
-  }
-
-  setStatus("YouTube'dan Türkçe şarkılar çekiliyor...");
+  setStatus("YouTube Music'ten Türkçe şarkılar aranıyor…");
   refreshBtn.disabled = true;
-
   const queries = [
-    { q: "türkçe rap 2026 official", genre: "rap" },
-    { q: "türkçe arabesk şarkılar", genre: "arabesk" },
-    { q: "türkçe pop şarkılar 2026", genre: "pop" },
-    { q: "hiphop türkçe official video", genre: "rap" },
+    { q: "türkçe rap official music video", genre: "rap" },
+    { q: "türkçe arabesk official music video", genre: "arabesk" },
+    { q: "türkçe pop official music video", genre: "pop" },
   ];
-
-  const results = [];
-
   try {
+    const results = [];
     for (const item of queries) {
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=12&regionCode=TR&relevanceLanguage=tr&q=${encodeURIComponent(item.q)}&key=${key}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error?.message || `YouTube API hatası (${res.status})`);
-      }
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=12&regionCode=TR&relevanceLanguage=tr&q=${encodeURIComponent(item.q)}`;
+      const res = await CinlaGoogle.youtubeFetch(url);
       const data = await res.json();
-      (data.items || []).forEach(v => {
-        results.push({
-          id: v.id.videoId,
-          title: decodeHtmlEntities(v.snippet.title),
-          channel: decodeHtmlEntities(v.snippet.channelTitle),
-          genre: item.genre,
-        });
-      });
+      if (!res.ok) throw new Error(data.error?.message || `YouTube API hatası (${res.status})`);
+      (data.items || []).forEach(v => results.push({ id: v.id.videoId, title: decodeHtmlEntities(v.snippet.title), channel: decodeHtmlEntities(v.snippet.channelTitle), genre: item.genre }));
     }
-
-    // Aynı video birden çok sorguda gelmiş olabilir, tekilleştir
-    const seen = new Set();
-    const deduped = results.filter(s => {
-      if (seen.has(s.id)) return false;
-      seen.add(s.id);
-      return true;
-    });
-
-    allSongs = deduped;
-    setCachedSongs(deduped);
-    setStatus(`${deduped.length} şarkı YouTube'dan çekildi ve önbelleğe kaydedildi.`);
+    allSongs = uniqueSongs(results);
+    markMusicVideoIds(allSongs.map(song => song.id));
+    setCachedSongs(allSongs);
+    setStatus(`${allSongs.length} müzik videosu bulundu.`);
     renderGrid();
-  } catch (err) {
-    setStatus(`Hata: ${err.message}`);
-  } finally {
-    refreshBtn.disabled = false;
-  }
+  } catch (err) { setStatus(err.message); }
+  finally { refreshBtn.disabled = false; }
 }
 
 // ---- Şarkı ekleme modalı: YouTube araması ----
 // Yapıştırılan YouTube linkinden videoyu bul (API anahtarı varsa YouTube'dan, yoksa oEmbed'den)
 async function showLinkResult(id) {
-  addResults.innerHTML = `<p class="note">Link çözülüyor...</p>`;
-  let meta = null;
-  const key = getApiKey();
-  if (key) {
-    try {
-      const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(id)}&key=${key}`);
-      if (res.ok) {
-        const data = await res.json();
-        const sn = data.items && data.items[0] && data.items[0].snippet;
-        if (sn) meta = { title: decodeHtmlEntities(sn.title), channel: decodeHtmlEntities(sn.channelTitle) };
-      }
-    } catch { /* oEmbed'e düş */ }
-  }
-  if (!meta) meta = await fetchSongMetaOnline(id);
-
-  // Başlık alınamadıysa da videoyu çalabilmen için sonucu yine göster:
-  // oynatıcı başlığı YouTube'dan kendisi okuyacak.
-  const known = !!meta;
-  const title = known ? meta.title : `YouTube videosu (${id})`;
-  const channel = known ? meta.channel : "Başlık oynatıcıda yüklenecek";
-  const row = document.createElement("div");
-  row.className = "add-result-item";
-  row.innerHTML = `
-    <img src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/default.jpg" alt="">
-    <div class="info">
-      <p>${escapeHtml(title)}</p>
-      <p class="sub">${escapeHtml(channel)}</p>
-    </div>
-    <a class="btn btn-quiet btn-small" href="player.html?v=${encodeURIComponent(id)}${known ? `&t=${encodeURIComponent(title)}&c=${encodeURIComponent(channel)}` : ""}">Çal</a>
-    ${known ? `<button class="btn btn-primary btn-small">Ekle</button>` : ""}
-  `;
-  const addBtn = row.querySelector("button");
-  if (addBtn) addBtn.addEventListener("click", e => {
-    saveUserSong({ id, title, channel, genre: "benim" });
-    e.currentTarget.textContent = "Eklendi";
-    e.currentTarget.disabled = true;
-    if (currentGenre === "benim" || currentGenre === "hepsi") renderGrid();
-  });
-  addResults.innerHTML = "";
-  addResults.appendChild(row);
+  addResults.innerHTML = `<p class="note">Müzik kategorisi doğrulanıyor…</p>`;
+  try {
+    const response = await CinlaGoogle.youtubeFetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${encodeURIComponent(id)}`);
+    const data = await response.json();
+    const video = data.items?.[0];
+    if (!response.ok) throw new Error(data.error?.message || "YouTube videosu doğrulanamadı.");
+    if (!video || video.snippet?.categoryId !== "10") throw new Error("Bu içerik müzik kategorisinde değil; klip dışı videolar oynatma listesine eklenmiyor.");
+    const title = decodeHtmlEntities(video.snippet.title);
+    const channel = decodeHtmlEntities(video.snippet.channelTitle);
+    addResults.innerHTML = `<div class="add-result-item"><img src="https://i.ytimg.com/vi/${encodeURIComponent(id)}/default.jpg" alt=""><div class="info"><p>${escapeHtml(title)}</p><p class="sub">${escapeHtml(channel)}</p></div><a class="btn btn-quiet btn-small" href="player.html?v=${encodeURIComponent(id)}">Çal</a><button class="btn btn-primary btn-small">Ekle</button></div>`;
+    markMusicVideoIds([id]);
+    addResults.querySelector("button").addEventListener("click", () => { saveUserSong({ id, title, channel, genre: "benim" }); renderGrid(); });
+  } catch (error) { addResults.innerHTML = `<p class="note">${escapeHtml(error.message)}</p>`; }
 }
 
 async function doAddSearch() {
-  const key = getApiKey();
   const q = addSearchInput.value.trim();
   if (!q) return;
-
-  // Link yapıştırıldıysa aramaya gerek yok: videoyu doğrudan bul
   const linkId = extractYouTubeId(q);
-  if (linkId) { showLinkResult(linkId); return; }
-
-  if (!key) {
-    addResults.innerHTML = `<p class="note">Arama yapmak için önce sol alttan YouTube API anahtarını kaydet.</p>`;
-    return;
-  }
-
-  addResults.innerHTML = `<p class="note">Aranıyor...</p>`;
-
+  if (linkId) { await showLinkResult(linkId); return; }
+  addResults.innerHTML = `<p class="note">Yalnızca müzik kategorisindeki videolar aranıyor…</p>`;
   try {
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=10&q=${encodeURIComponent(q)}&key=${key}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error?.message || `YouTube API hatası (${res.status})`);
-    }
-    const data = await res.json();
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=10&q=${encodeURIComponent(q)}`;
+    const response = await CinlaGoogle.youtubeFetch(url);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || `YouTube API hatası (${response.status})`);
     const items = data.items || [];
-
-    if (!items.length) {
-      addResults.innerHTML = `<p class="note">Sonuç bulunamadı.</p>`;
-      return;
-    }
-
+    if (!items.length) { addResults.innerHTML = `<p class="note">Müzik kategorisinde sonuç bulunamadı.</p>`; return; }
     addResults.innerHTML = "";
-    items.forEach(v => {
-      const id = v.id.videoId;
-      const title = decodeHtmlEntities(v.snippet.title);
-      const channel = decodeHtmlEntities(v.snippet.channelTitle);
-      const thumb = v.snippet.thumbnails?.default?.url || `https://i.ytimg.com/vi/${id}/default.jpg`;
-
+    items.forEach(video => {
+      const id = video.id.videoId;
+      const title = decodeHtmlEntities(video.snippet.title);
+      const channel = decodeHtmlEntities(video.snippet.channelTitle);
       const row = document.createElement("div");
       row.className = "add-result-item";
-      row.innerHTML = `
-        <img src="${thumb}" alt="">
-        <div class="info">
-          <p>${escapeHtml(title)}</p>
-          <p class="sub">${escapeHtml(channel)}</p>
-        </div>
-        <button class="btn btn-primary btn-small">Ekle</button>
-      `;
-      row.querySelector("button").addEventListener("click", () => {
-        saveUserSong({ id, title, channel, genre: "benim" });
-        row.querySelector("button").textContent = "Eklendi";
-        row.querySelector("button").disabled = true;
-        if (currentGenre === "benim" || currentGenre === "hepsi") renderGrid();
-      });
+      row.innerHTML = `<img src="${escapeHtml(video.snippet.thumbnails?.default?.url || `https://i.ytimg.com/vi/${id}/default.jpg`)}" alt=""><div class="info"><p>${escapeHtml(title)}</p><p class="sub">${escapeHtml(channel)}</p></div><button class="btn btn-primary btn-small">Ekle</button>`;
+      markMusicVideoIds([id]);
+      row.querySelector("button").addEventListener("click", () => { saveUserSong({ id, title, channel, genre: "benim" }); row.querySelector("button").textContent = "Eklendi"; row.querySelector("button").disabled = true; renderGrid(); });
       addResults.appendChild(row);
     });
-  } catch (err) {
-    addResults.innerHTML = `<p class="note">Hata: ${escapeHtml(err.message)}</p>`;
-  }
+  } catch (error) { addResults.innerHTML = `<p class="note">${escapeHtml(error.message)}</p>`; }
 }
 
 // ---- Spotify çalma listesi içe aktarma (Client ID / Secret gerekmez) ----
@@ -1002,9 +1131,9 @@ function parseSpotifyEmbed(html) {
   return { name: (entity?.name || entity?.title || "").trim(), tracks };
 }
 
-async function findYoutubeIdForTrack(query, ytKey) {
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=1&q=${encodeURIComponent(query)}&key=${ytKey}`;
-  const res = await fetch(url);
+async function findYoutubeIdForTrack(query) {
+  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=1&q=${encodeURIComponent(query)}`;
+  const res = await CinlaGoogle.youtubeFetch(url);
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     const err = new Error(errBody.error?.message || `YouTube API hatası (${res.status})`);
@@ -1014,6 +1143,7 @@ async function findYoutubeIdForTrack(query, ytKey) {
   const data = await res.json();
   const item = (data.items || [])[0];
   if (!item) return null;
+  markMusicVideoIds([item.id.videoId]);
   return { id: item.id.videoId, title: decodeHtmlEntities(item.snippet.title), channel: decodeHtmlEntities(item.snippet.channelTitle) };
 }
 
@@ -1028,11 +1158,8 @@ function setImportProgress(ratio) {
 
 // Ortak aktarım: şarkı adlarını YouTube'da bulur, yeni bir çalma listesi oluşturur.
 async function importTracks(tracks, playlistName) {
-  const ytKey = getApiKey();
-  if (!ytKey) {
-    spotifyImportStatus.textContent = "Şarkıları YouTube'da bulmak için önce sol alttan YouTube API anahtarını kaydet.";
-    return;
-  }
+  try { await CinlaGoogle.getGoogleAccessToken(false); }
+  catch (error) { spotifyImportStatus.textContent = error.message; return; }
 
   spotifyImportBtn.disabled = true;
   spotifyPasteBtn.disabled = true;
@@ -1051,7 +1178,7 @@ async function importTracks(tracks, playlistName) {
       ? `${cleanTitleForSearch(t.artist)} - ${cleanTitleForSearch(t.name)}`
       : cleanTitleForSearch(t.name);
     try {
-      const found = await findYoutubeIdForTrack(query, ytKey);
+      const found = await findYoutubeIdForTrack(query);
       if (found) {
         const song = { id: found.id, title: found.title, channel: t.artist || found.channel, genre: "benim" };
         saveUserSong(song);
@@ -1081,10 +1208,6 @@ async function doSpotifyImport() {
 
   if (!playlistId) {
     spotifyImportStatus.textContent = "Geçerli bir Spotify çalma listesi linki yapıştır (open.spotify.com/playlist/...).";
-    return;
-  }
-  if (!getApiKey()) {
-    spotifyImportStatus.textContent = "Şarkıları YouTube'da bulmak için önce sol alttan YouTube API anahtarını kaydet.";
     return;
   }
 

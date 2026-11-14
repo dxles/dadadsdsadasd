@@ -15,3 +15,11 @@ Manifest, ikonlar ve servis çalışanı projede mevcut. Destekleyen tarayıcıd
 ## Reklam engelleme
 
 Bir web sayfası, tarayıcının başka sitelerdeki reklam isteklerini veya YouTube oynatıcı içindeki reklamları engelleyemez. Arşivde bulunan uBlock filtre dosyaları bir tarayıcı uzantısı motoru olmadan çalışmaz; projeye dâhil edilmiş olmaları bu engellemeyi sağlamaz. Bu nedenle dosyalar etkinleştirilmiş gibi sunulmaz.
+
+## Google ve Spotify hesapları
+
+`integrations-config.js` dosyasına uygulama sahibinin OAuth istemci kimlikleri yazılmalıdır. Google Cloud Console'da YouTube Data API v3 etkinleştirilmiş bir proje ve web OAuth istemcisi oluşturun; sitenin HTTPS adresini yetkili JavaScript kaynağı olarak ekleyin. Spotify Developer Dashboard'da bir uygulama oluşturun ve `location.origin + location.pathname` ile aynı Redirect URI'yi ekleyin. Ön yüze client secret koymayın; Spotify bağlantısı PKCE kullanır.
+
+Google ve Spotify oturum belirteçleri kullanıcının tarayıcısındaki `localStorage` içinde tutulur. Google izni YouTube Data API erişimi içindir; arama, günlük popüler müzik listesi ve hesap kitaplığı için kullanılır. Spotify bağlantısı kullanıcının listelerini ve beğendiklerini okur. Spotify parçaları Spotify'da açılır; Çınla'nın oynatıcısı YouTube müzik kategorisi videolarını çalar.
+
+Günlük ana sayfa seçkisi YouTube Data API'nin Türkiye bölgesi, müzik kategorisi (`videoCategoryId=10`) ve `mostPopular` listesinden gelir. Bu liste kişiye özel YouTube Music öneri akışı veya resmi “En Popüler Şarkılar” grafiğiyle aynı şey değildir. YouTube Data API günlük YouTube Music şarkı grafiğini doğrudan sunmaz. Hesaptan alınan YouTube listeleri ve beğeniler de kategori 10 olmayan videoları göstermeyecek şekilde süzülür.

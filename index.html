@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0F1733">
+<meta name="theme-color" content="#000000">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Çınla">
@@ -14,8 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261114a">
-<link rel="stylesheet" href="lyrics-styles.css?v=20261114a">
+<link rel="stylesheet" href="style.css?v=20261114c">
+<link rel="stylesheet" href="lyrics-styles.css?v=20261114c">
 </head>
 <body>
 
@@ -54,8 +54,8 @@
     </section>
 
     <section class="import-box" aria-labelledby="importLabel">
-      <label id="importLabel" for="spotifyImportInput">Spotify listesi aktar</label>
-      <p class="import-hint">Çalma listesinin linkini yapıştır. Şarkıları YouTube'da bulup yeni bir listeye ekleriz.</p>
+      <label id="importLabel" for="spotifyImportInput">Herkese açık liste aktar</label>
+      <p class="import-hint">Spotify’dan paylaşım bağlantısı aktar veya hesabını bağlayıp tüm listelerini eşitle.</p>
       <input type="url" id="spotifyImportInput" placeholder="open.spotify.com/playlist/..." autocomplete="off">
       <button id="spotifyImportBtn" class="btn btn-primary">İçe aktar</button>
       <div class="import-progress" id="importProgress" aria-hidden="true"><span id="importProgressFill"></span></div>
@@ -72,16 +72,11 @@
       <button class="btn btn-quiet btn-wide" id="addSongBtn">Şarkı ekle</button>
       <button class="btn btn-quiet btn-wide" id="settingsBtn">Ayarlar</button>
 
-      <div class="key-box">
-        <div class="key-head">
-          <label for="apiKeyInput">YouTube API anahtarı</label>
-          <button type="button" id="apiHelpBtn" class="icon-btn" title="Nasıl alınır?" aria-label="API anahtarı nasıl alınır">?</button>
-        </div>
-        <div class="key-row">
-          <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off">
-          <button id="saveKeyBtn" class="btn btn-quiet">Kaydet</button>
-        </div>
-        <p class="key-hint">Anahtar sadece bu tarayıcıda saklanır.</p>
+      <div class="connect-box">
+        <p class="connect-heading">HESAPLARIN</p>
+        <button id="googleConnectBtn" class="connect-button google-connect" type="button"><span class="provider-icon">G</span><span id="googleConnectLabel">Google ile bağlan</span></button>
+        <button id="spotifyConnectBtn" class="connect-button spotify-connect" type="button"><span class="provider-icon">●</span><span id="spotifyConnectLabel">Spotify’ı bağla</span></button>
+        <p id="connectionStatus" class="connection-status" role="status" aria-live="polite">Bağlantıların ve koleksiyonların bu cihazda saklanır.</p>
       </div>
     </div>
   </aside>
@@ -100,6 +95,40 @@
     </header>
 
     <div id="statusBar" class="status-bar" role="status" aria-live="polite"></div>
+
+    <section class="feature-panel" aria-labelledby="featureTitle">
+      <div class="feature-copy">
+        <span class="feature-kicker"><span class="live-dot"></span> BUGÜNÜN AKIŞI</span>
+        <h2 id="featureTitle">Müziğini bul.<br><em>Akışa bırak.</em></h2>
+        <p>Türkçe rap, pop ve arabeskten seçtiklerin. Bir şarkı aç, devamı sende.</p>
+        <div class="feature-actions">
+          <button class="feature-play" id="featurePlayBtn" type="button"><span aria-hidden="true">▶</span> Şimdi dinle</button>
+          <button class="feature-radio" id="featureRadioBtn" type="button"><span aria-hidden="true">⤨</span> Karışık radyo</button>
+          <button class="feature-explore" id="featureExploreBtn" type="button">Koleksiyona göz at <span aria-hidden="true">↓</span></button>
+        </div>
+      </div>
+      <div class="feature-art" aria-hidden="true">
+        <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
+        <div class="art-disc"><div class="disc-center"></div></div>
+        <div class="art-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span class="art-note note-one">♪</span><span class="art-note note-two">♫</span>
+      </div>
+    </section>
+
+    <section class="daily-section" aria-labelledby="dailyTitle">
+      <div class="library-heading"><div><p class="eyebrow">TÜRKİYE • GÜNCEL</p><h2 id="dailyTitle">Bugünün popüler müzikleri</h2></div><a class="library-caption external-chart-link" href="https://music.youtube.com/explore" target="_blank" rel="noopener noreferrer">YouTube Music günlük listeleri ↗</a></div>
+      <div id="dailyGrid" class="daily-grid"><div class="daily-placeholder">Günlük listeyi görmek için Google hesabını bağla.</div></div>
+    </section>
+
+    <section class="home-playlists-section" aria-labelledby="homePlaylistsTitle">
+      <div class="library-heading"><div><p class="eyebrow">SENİN HESAPLARIN</p><h2 id="homePlaylistsTitle">Listelerin ve beğenilerin</h2></div></div>
+      <div id="homePlaylistsGrid" class="home-playlists-grid"><div class="daily-placeholder">Google veya Spotify hesabını bağlayınca listelerin burada görünür.</div></div>
+    </section>
+
+    <div class="library-heading">
+      <div><p class="eyebrow">SENİN İÇİN</p><h2>Dinlemeye devam et</h2></div>
+      <span class="library-caption" id="libraryCaption">Seçkini keşfet</span>
+    </div>
 
     <div id="songGrid" class="song-grid"></div>
   </main>
@@ -169,46 +198,6 @@
   </div>
 </div>
 
-<!-- API anahtarı nasıl alınır -->
-<div id="apiHelpModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="apiHelpTitle">
-  <div class="modal-box api-help-box">
-    <h2 id="apiHelpTitle">YouTube API anahtarı nasıl alınır?</h2>
-
-    <ol class="api-steps">
-      <li>
-        <strong>Google Cloud Console'a git.</strong>
-        <p><a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> adresine gir ve Google hesabınla giriş yap.</p>
-      </li>
-      <li>
-        <strong>Yeni bir proje oluştur.</strong>
-        <p>Üst menüden proje seçiciye tıkla, "Yeni Proje"yi seç, bir isim ver (örn. "cinla-app") ve Oluştur'a bas.</p>
-      </li>
-      <li>
-        <strong>YouTube Data API v3'ü etkinleştir.</strong>
-        <p>Sol menüden "APIs &amp; Services" ve "Library"yi aç, "YouTube Data API v3" yaz, sonucu aç ve "Enable"a bas.</p>
-      </li>
-      <li>
-        <strong>API anahtarı oluştur.</strong>
-        <p>"APIs &amp; Services" altında "Credentials"a git, "Create Credentials" ve "API key"i seç. Anahtar ekranda görünür.</p>
-      </li>
-      <li>
-        <strong>Anahtarı kısıtla (önerilir).</strong>
-        <p>Anahtara tıkla, "API restrictions" bölümünden sadece "YouTube Data API v3"ü seç. İstersen "Application restrictions" ile siteni de belirtebilirsin.</p>
-      </li>
-      <li>
-        <strong>Anahtarı buraya yapıştır.</strong>
-        <p><code>AIza...</code> ile başlayan anahtarı soldaki "YouTube API anahtarı" kutusuna yapıştırıp Kaydet'e bas. Anahtar sadece bu tarayıcıda (localStorage) saklanır, hiçbir sunucuya gönderilmez.</p>
-      </li>
-    </ol>
-
-    <div class="api-help-note">
-      <strong>Not:</strong> YouTube Data API v3'ün günlük ücretsiz kotası sınırlıdır. Her arama 100 birim harcar ve günlük kota 10.000 birimdir, yani günde yaklaşık 100 arama. Spotify aktarımında her şarkı bir arama sayılır. Kota dolarsa ertesi gün yeniden çalışır.
-    </div>
-
-    <button id="closeApiHelpBtn" class="btn btn-primary modal-close">Anladım</button>
-  </div>
-</div>
-
 <!-- Sağ alt mini oynatıcı: player.html'den "Listeye dön" ile gelince müzik kesilmeden burada devam eder. -->
 <div id="miniPlayer" class="mini-player hidden">
   <a href="#" id="miniInfoLink" class="mini-info-link">
@@ -234,12 +223,17 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Flip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
-<script src="common.js?v=20261009a"></script>
-<script src="pwa.js?v=20261114a"></script>
-<script src="lyrics-styles.js?v=20261009a"></script>
-<script src="seed-songs.js?v=20261009a"></script>
-<script src="youtube-player.js?v=20261009a"></script>
-<script src="app.js?v=20261009a"></script>
+<script src="common.js?v=20261114c"></script>
+<script src="integrations-config.js?v=20261114c"></script>
+<script src="google-auth.js?v=20261114c"></script>
+<script src="spotify-auth.js?v=20261114c"></script>
+<script src="pwa.js?v=20261114c"></script>
+<script src="lyrics-styles.js?v=20261114c"></script>
+<script src="seed-songs.js?v=20261114c"></script>
+<script src="youtube-player.js?v=20261114c"></script>
+<script src="app.js?v=20261114c"></script>
 </body>
 </html>
+
+
 

@@ -1,6 +1,5 @@
 // ---- Ortak depolama anahtarları ----
 const STORAGE_KEYS = {
-  apiKey: "cinla_yt_api_key",
   userSongs: "cinla_user_songs",
   cachedSongs: "cinla_cached_songs",
   queue: "cinla_queue",
@@ -29,13 +28,17 @@ function decodeHtmlEntities(str) {
   return div.textContent || "";
 }
 
-// ---- YouTube API anahtarı ----
-function getApiKey() {
-  return localStorage.getItem(STORAGE_KEYS.apiKey) || "";
+function markMusicVideoIds(ids) {
+  try {
+    const approved = new Set(JSON.parse(localStorage.getItem("cinla_music_video_ids") || "[]"));
+    ids.filter(Boolean).forEach(id => approved.add(id));
+    localStorage.setItem("cinla_music_video_ids", JSON.stringify([...approved].slice(-5000)));
+  } catch { /* depolama doluysa yalnızca oturum içi akış sürer */ }
 }
 
-function setApiKey(key) {
-  localStorage.setItem(STORAGE_KEYS.apiKey, key || "");
+function isApprovedMusicVideo(id) {
+  try { return JSON.parse(localStorage.getItem("cinla_music_video_ids") || "[]").includes(id); }
+  catch { return false; }
 }
 
 // ---- Kullanıcının kendi eklediği şarkılar ----
@@ -122,7 +125,7 @@ function addSongToPlaylist(playlistId, song) {
   const pl = playlists.find(p => p.id === playlistId);
   if (!pl) return false;
   if (pl.songs.some(s => s.id === song.id)) return false;
-  pl.songs.push({ id: song.id, title: song.title, channel: song.channel || "", genre: song.genre || "benim" });
+  pl.songs.push({ id: song.id, title: song.title, channel: song.channel || "", genre: song.genre || "benim", source: song.source || "youtube", externalUrl: song.externalUrl || "", thumbnail: song.thumbnail || "" });
   savePlaylists(playlists);
   return true;
 }
