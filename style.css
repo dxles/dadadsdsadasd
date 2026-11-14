@@ -694,6 +694,66 @@ textarea { resize: vertical; line-height: 1.4; }
     *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
 
+/* ---------- Daha sakin ve tutarlı ana sayfa ---------- */
+body {
+    background:
+        radial-gradient(ellipse at 88% 0%, rgba(76, 201, 181, 0.075), transparent 34rem),
+        var(--ink);
+}
+.sidebar { background: rgba(21, 30, 64, 0.88); }
+.content { padding-top: 30px; }
+.content-header { align-items: center; margin-bottom: 20px; }
+.content-heading { min-width: 0; }
+.content-heading .eyebrow {
+    margin-bottom: 9px;
+    color: var(--turq);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+}
+.content-heading .eyebrow span { padding: 0 5px; color: var(--muted); }
+.content-header h1 {
+    font-size: clamp(2.15rem, 4vw, 3.4rem);
+    letter-spacing: -0.045em;
+}
+.page-intro { margin-top: 10px; color: var(--muted); font-size: 15px; }
+.header-actions { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.btn-install {
+    color: var(--ink);
+    background: var(--turq);
+    font-weight: 700;
+}
+.btn-install:hover { background: #6bd9c6; }
+.btn-install[hidden] { display: none; }
+.song-grid { gap: 34px 24px; }
+.track-thumb { border-radius: 10px; background: linear-gradient(135deg, var(--ink-3), #28365e); }
+.track-thumb img { transition: transform 0.35s ease; }
+.song-card:hover .track-thumb img { transform: scale(1.035); }
+.song-card-title { margin-top: 12px; }
+.genre-btn, .playlist-btn { border-radius: 8px; }
+.import-box { border-radius: 12px; background: rgba(15, 23, 51, 0.62); }
+.status-bar:empty { margin-bottom: 12px; min-height: 0; }
+
+@media (max-width: 780px) {
+    .sidebar { gap: 16px; padding: 18px 18px 16px; }
+    .brand-name { font-size: 28px; }
+    .genre-nav { flex-direction: row; gap: 6px; overflow-x: auto; padding: 1px 0 5px; }
+    .genre-btn { flex: 0 0 auto; padding: 8px 12px; }
+    .genre-btn.active::before { top: auto; right: 10px; bottom: 3px; left: 10px; width: auto; height: 2px; }
+    .content { padding-top: 22px; }
+    .content-header { align-items: flex-start; }
+    .content-header h1 { font-size: clamp(2rem, 8vw, 3rem); }
+    .page-intro { max-width: 38ch; font-size: 14px; }
+    .header-actions { flex-direction: column-reverse; align-items: stretch; }
+    .header-actions .btn { white-space: nowrap; padding: 9px 12px; }
+}
+@media (max-width: 480px) {
+    .content-header { flex-direction: column; align-items: stretch; gap: 14px; }
+    .header-actions { flex-direction: row; }
+    .header-actions .btn { flex: 1; }
+    .song-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; }
+}
+
 
 /* ---------- Ayarlar modalı ---------- */
 .settings-box { width: 760px; overflow-y: auto; }

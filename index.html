@@ -14,8 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261009a">
-<link rel="stylesheet" href="lyrics-styles.css?v=20261009a">
+<link rel="stylesheet" href="style.css?v=20261114a">
+<link rel="stylesheet" href="lyrics-styles.css?v=20261114a">
 </head>
 <body>
 
@@ -88,8 +88,15 @@
 
   <main class="content" id="content">
     <header class="content-header">
-      <h1 id="sectionTitle">Hepsi</h1>
-      <button id="refreshBtn" class="btn btn-quiet" title="Listeyi yenile">Yenile</button>
+      <div class="content-heading">
+        <p class="eyebrow">ÇINLA <span aria-hidden="true">/</span> TÜRKÇE MÜZİK</p>
+        <h1 id="sectionTitle">Hepsi</h1>
+        <p class="page-intro">Dinlemek istediklerini bul, kendi listeni oluştur. Aradığın şarkıyı eklemek de kolay.</p>
+      </div>
+      <div class="header-actions">
+        <button id="installAppBtn" class="btn btn-install" type="button">Uygulamayı yükle</button>
+        <button id="refreshBtn" class="btn btn-quiet" title="Listeyi yenile">Yenile</button>
+      </div>
     </header>
 
     <div id="statusBar" class="status-bar" role="status" aria-live="polite"></div>
@@ -228,9 +235,11 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
 <script src="common.js?v=20261009a"></script>
+<script src="pwa.js?v=20261114a"></script>
 <script src="lyrics-styles.js?v=20261009a"></script>
 <script src="seed-songs.js?v=20261009a"></script>
 <script src="youtube-player.js?v=20261009a"></script>
 <script src="app.js?v=20261009a"></script>
 </body>
 </html>
+
