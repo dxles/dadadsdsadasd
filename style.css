@@ -1129,3 +1129,38 @@ body {
 .settings-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .lyrics-preview-soundcloud .lr-style-soundcloud .lr-line { --sc: #8D8904; --sc-hi: #eee889; }
+
+
+/* Çınla 2026: calmer monochrome shell and compact profile menu */
+:root { --ink:#090909; --ink-2:#111; --ink-3:#1b1b1b; --line:rgba(255,255,255,.1); --text:#f2f2f2; --muted:#a4a4a4; --coral:#8D8904; --coral-hi:#a39d08; --turq:#b7b7b7; }
+body { background:#080808; }
+.sidebar { background:#0d0d0d; border-color:rgba(255,255,255,.08); }
+.btn-primary,.btn-install { color:#f5f5f5; background:#242424; border:1px solid #393939; }
+.btn-primary:hover:not(:disabled),.btn-install:hover { background:#303030; }
+.content-heading .eyebrow,.library-heading .eyebrow { color:#a9a9a9; }
+.feature-panel { background:linear-gradient(146deg,#050505 0%,#292807 100%); }
+.feature-panel::before,.art-bars i,.live-dot { background-color:#77730a; }
+.feature-play { color:#fff; background:#282828; }
+.feature-play:hover { background:#383838; }
+.feature-radio,.feature-explore { color:#eee; border-color:#444; background:rgba(0,0,0,.22); }
+.status-bar:not(:empty) { background:#191919; color:#eee; }
+.connect-box { display:flex; flex-direction:column; gap:9px; }
+.connect-heading { color:#aaa; font-size:10px; font-weight:800; letter-spacing:.16em; }
+.connect-button { display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; border:1px solid #333; border-radius:11px; background:#151515; color:#eee; text-align:left; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.connect-button:hover { border-color:#777; background:#1d1d1d; }
+.connect-button:disabled { opacity:.55; cursor:wait; }
+.provider-icon { display:grid; width:22px; height:22px; place-items:center; border-radius:50%; background:#f5f5f5; color:#333; font-size:14px; }
+.spotify-connect .provider-icon { background:#252525; color:#fff; font-size:13px; }
+.connection-status { color:#aaa; font-size:11px; line-height:1.45; }
+.header-actions { position:relative; }
+.profile-wrap { position:relative; }
+.profile-menu-btn { display:flex; align-items:center; gap:9px; min-height:42px; padding:5px 13px 5px 6px; border:1px solid #333; border-radius:99px; background:#151515; color:#eee; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.profile-menu-btn:hover,.profile-menu-btn[aria-expanded="true"] { background:#222; border-color:#555; }
+.profile-avatar { display:grid; width:29px; height:29px; place-items:center; border-radius:50%; background:#333; color:#fff; font-weight:800; }
+.profile-chevron { color:#aaa; font-size:16px; }
+.account-menu { position:absolute; top:calc(100% + 10px); right:0; z-index:120; width:min(320px,calc(100vw - 32px)); padding:16px; border:1px solid #333; border-radius:16px; background:#111; box-shadow:0 18px 52px rgba(0,0,0,.5); }
+.account-menu-title { margin-bottom:12px; font-size:14px; font-weight:800; }
+.account-menu .connect-heading { display:none; }
+.account-menu .connection-status { margin-top:2px; }
+@media(max-width:780px) { .header-actions { flex-direction:row; align-items:center; flex-wrap:wrap; } .account-menu { right:0; } }
+@media(max-width:520px) { .header-actions { gap:7px; } .profile-menu-btn { min-height:38px; } #installAppBtn { font-size:11px; } }

@@ -35,7 +35,6 @@
         <div class="track-title" id="trackTitle">Şarkı Yükleniyor...</div>
         <div class="track-channel" id="trackChannel">Sanatçı</div>
         <div class="player-status" id="playerStatus"></div>
-        <div class="up-next" id="upNext" aria-live="polite"></div>
         <div class="progress-area">
           <div class="wave" id="waveBars" aria-hidden="true"></div>
           <input type="range" id="seekBar" value="0" min="0" max="100">
@@ -65,7 +64,7 @@
 
   <!-- Alt sol butonlar: Çalma sırası + Söz stili -->
   <div class="action-row">
-    <button id="queueToggleBtn" class="corner-btn" title="Çalma sırası">
+    <button id="queueToggleBtn" class="corner-btn queue-open-btn" title="Sıra panelini aç" aria-label="Sıra panelini aç" aria-expanded="false">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h11M4 12h11M4 18h7"/><path d="M17 9v9.5a2.5 2.5 0 1 1-1.5-2.29"/><path d="M17 9l3-2v9"/></svg>
       <span>Sıra</span>
     </button>
@@ -105,16 +104,29 @@
     </div>
   </div>
 
-  <!-- Çalma Sırası Paneli -->
-  <div class="queue-panel" id="queuePanel">
+  <!-- Spotify tarzı kuyruk ve dinleme geçmişi -->
+  <aside class="queue-panel" id="queuePanel" aria-label="Çalma sırası">
     <div class="queue-panel-head">
-      <h3>Çalma Sırası</h3>
-      <button id="queueCloseBtn" class="queue-close-btn" title="Kapat">
+      <div class="queue-tabs" role="tablist" aria-label="Kuyruk görünümleri">
+        <button class="queue-tab active" id="queueTabBtn" role="tab" aria-selected="true" aria-controls="queuePane">Sıraya Ekle</button>
+        <button class="queue-tab" id="recentTabBtn" role="tab" aria-selected="false" aria-controls="recentPane">Yakın zamanda çalınanlar</button>
+      </div>
+      <button id="queueCloseBtn" class="queue-close-btn" title="Kapat" aria-label="Kuyruğu kapat">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
-    <div class="queue-list" id="queueList"></div>
-  </div>
+    <p class="queue-note">Öneriler ve tanıtım etkisi hakkında</p>
+    <section class="queue-pane" id="queuePane" role="tabpanel" aria-labelledby="queueTabBtn">
+      <h3 class="queue-section-title">Şu anda çalan</h3>
+      <div class="queue-current" id="queueCurrentSong"></div>
+      <h3 class="queue-section-title queue-next-title">Sonraki</h3>
+      <div class="queue-list" id="queueList"></div>
+    </section>
+    <section class="queue-pane" id="recentPane" role="tabpanel" aria-labelledby="recentTabBtn" hidden>
+      <h3 class="queue-section-title">Yakın zamanda çalınanlar</h3>
+      <div class="queue-list" id="recentHistoryList"></div>
+    </section>
+  </aside>
 
   <!-- Alt Kontrol Barı -->
   <div class="controls">

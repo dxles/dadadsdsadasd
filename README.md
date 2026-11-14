@@ -8,9 +8,22 @@ Dosyaları bir web sunucusuna yükleyin ve siteyi HTTPS üzerinden açın. Servi
 
 Geliştirme sırasında proje klasöründe `python -m http.server 8000` çalıştırıp `http://localhost:8000` adresini açabilirsiniz.
 
-## Uygulama olarak kurma
+## Windows masaüstü uygulaması
 
-Manifest, ikonlar ve servis çalışanı projede mevcut. Destekleyen tarayıcıda **Uygulamayı yükle** düğmesini kullanın; iPhone ve iPad'de Paylaş menüsünden **Ana Ekrana Ekle** seçeneğini kullanın. Bu yöntem kurulabilir bir PWA oluşturur. Mağazalarda dağıtılan Android/iOS uygulaması istenirse ayrıca yerel bir uygulama kabuğu ve mağaza yapılandırması gerekir.
+Windows kurulum sihirbazı ve taşınabilir EXE için proje klasöründe `npm install` ardından `npm run dist` çalıştırın. Çıktılar `../cinla-windows` klasörüne oluşturulur. Kurulum dosyasını web sürümünde indirme düğmesinin çalışması için `downloads/Cinla-1.0.0-x64.exe` konumuna kopyalayın. EXE şarkı ekranı açıldığında tam ekrana geçer. Uygulama Spotify müziklerini çalmak yerine Spotify listelerini içe aktarır; YouTube müzik kategorisi onaylı videoları oynatır.
+
+## Web uygulaması olarak kurma
+
+Manifest, ikonlar ve servis çalışanı projede mevcut. PWA destekleyen tarayıcıda ana ekrana ekleyebilirsiniz. Web'deki Windows indirme düğmesi `downloads/Cinla-1.0.0-x64.exe` dosyasını indirir; bu dosyayı web sunucusuna ayrıca koyun.
+
+## Spotify yönlendirme adresi
+
+Spotify Developer Dashboard > uygulama > **Settings** > **Redirect URIs** alanına aşağıdaki adresleri ayrı ayrı ekleyip **Save**'e basın. Adresler büyük-küçük harf ve son eğik çizgi dahil birebir eşleşmelidir:
+
+- Web sitesi: `https://dxles.github.io/dadadsdsadasd/index.html`
+- Windows masaüstü uygulaması: `http://127.0.0.1:47831/index.html`
+
+Bu adres listede görünmeden yeniden Spotify ile bağlanın. Spotify'da `localhost` yerine `127.0.0.1` loopback adresi kullanılır. Çınla web adresinde ilk URI'yi, masaüstü uygulamasında ikinci URI'yi kullanır.
 
 ## Reklam engelleme
 

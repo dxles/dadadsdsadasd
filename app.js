@@ -1252,3 +1252,14 @@ async function doPasteImport() {
 }
 
 init();
+
+
+// Header account menu keeps Google and Spotify connections close at hand.
+(() => {
+  const button = document.getElementById("profileMenuBtn");
+  const menu = document.getElementById("accountMenu");
+  if (!button || !menu) return;
+  button.addEventListener("click", event => { event.stopPropagation(); menu.hidden = !menu.hidden; button.setAttribute("aria-expanded", String(!menu.hidden)); });
+  document.addEventListener("click", event => { if (!menu.hidden && !menu.contains(event.target) && !button.contains(event.target)) { menu.hidden = true; button.setAttribute("aria-expanded", "false"); } });
+  document.addEventListener("keydown", event => { if (event.key === "Escape" && !menu.hidden) { menu.hidden = true; button.setAttribute("aria-expanded", "false"); button.focus(); } });
+})();

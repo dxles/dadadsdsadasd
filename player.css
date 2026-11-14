@@ -985,3 +985,45 @@ body[data-layout="soundcloud"] #curTime { color: #8D8904; }
 .ai-btn.primary:hover { background: #aaa506; }
 .ai-link { color: #e2dc72; }
 
+
+
+/* Calm monochrome player and Spotify-style queue drawer */
+:root { --spotify-green:#e8e8e8; --dark-bg:#050505; --dark-card:#111; --dark-hover:#202020; --text-secondary:#a6a6a6; }
+.bg-overlay { background:rgba(0,0,0,.42); }
+.track-title,.track-channel,.player-status,.time-row,.lyrics-status { color:#eee; }
+#seekBar,.wave,.progress-area,.lyrics-container { accent-color:#ddd; }
+.corner-btn,.ctrl-btn { color:#eee; }
+.corner-btn.active,.ctrl-btn.active { color:#fff; }
+.play-btn { background:#f1f1f1; color:#111; }
+.play-btn:hover { background:#fff; }
+.action-row { left:26px; bottom:26px; }
+.action-row .corner-btn { background:rgba(15,15,15,.84); border:1px solid rgba(255,255,255,.15); color:#eee; }
+.action-row .corner-btn:hover,.action-row .corner-btn[aria-expanded="true"] { background:#282828; }
+.queue-panel { width:min(376px,100vw); padding:0 0 12px; background:#111; border-left:1px solid #292929; }
+.queue-panel-head { gap:12px; min-height:58px; padding:10px 14px 0 18px; border:0; }
+.queue-tabs { display:flex; align-self:stretch; align-items:stretch; gap:24px; min-width:0; overflow-x:auto; }
+.queue-tab { position:relative; flex:none; border:0; background:none; color:#a7a7a7; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.queue-tab.active { color:#fff; }
+.queue-tab.active::after { content:""; position:absolute; right:0; bottom:0; left:0; height:2px; background:#f2f2f2; }
+.queue-close-btn { flex:none; color:#aaa; }
+.queue-note { padding:14px 15px 10px; color:#aaa; font-size:12px; }
+.queue-pane { display:flex; min-height:0; flex:1; flex-direction:column; overflow:hidden; }
+.queue-section-title { padding:8px 15px 4px; color:#f5f5f5; font-size:14px; font-weight:750; }
+.queue-next-title { margin-top:10px; }
+.queue-current { flex:none; padding:0 9px; }
+.queue-list { min-height:0; padding:4px 8px 20px; overflow:auto; gap:1px; }
+.queue-item { min-height:58px; padding:7px; border-radius:5px; }
+.queue-item:hover { background:#202020; }
+.queue-item.active { background:transparent; }
+.queue-item img { width:46px; height:46px; border-radius:4px; }
+.queue-item-info { min-width:0; }
+.queue-item-title { overflow:hidden; color:#eee; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+.queue-item-channel { overflow:hidden; color:#aaa; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+.queue-now-badge { color:#bdbdbd; font-size:10px; }
+.queue-empty { padding:16px 10px; color:#aaa; font-size:12px; text-align:left; }
+.queue-open-btn { min-width:86px; justify-content:center; }
+.lyrics-style-menu { background:rgba(15,15,15,.96); border-color:rgba(255,255,255,.13); }
+.lsm-opt.selected,.lsm-chip.selected { color:#111; background:#ddd; border-color:#ddd; }
+.ai-btn.primary { color:#111; background:#eee; }
+.ai-link { color:#ddd; }
+@media(max-width:700px) { .queue-panel { width:100vw; } .stage { padding-right:30px; padding-left:30px; } .action-row { left:14px; bottom:18px; } }

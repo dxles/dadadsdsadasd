@@ -41,7 +41,12 @@
       code_challenge: challenge,
       state,
     });
-    location.href = `https://accounts.spotify.com/authorize?${params}`;
+    const authorizationUrl = `https://accounts.spotify.com/authorize?${params}`;
+    if (window.cinlaDesktop?.openSpotifyAuth) {
+      window.cinlaDesktop.openSpotifyAuth(authorizationUrl);
+      return;
+    }
+    location.href = authorizationUrl;
   }
 
   async function exchangeCode(code) {

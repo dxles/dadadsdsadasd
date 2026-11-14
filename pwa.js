@@ -2,6 +2,7 @@
   const installButton = document.getElementById("installAppBtn");
   const status = document.getElementById("statusBar");
   if (!installButton) return;
+  if (window.cinlaDesktop?.isDesktop) { installButton.hidden = true; return; }
 
   let installPrompt = null;
   const isInstalled = () => window.matchMedia("(display-mode: standalone)").matches ||
@@ -21,6 +22,10 @@
   });
 
   installButton.addEventListener("click", async () => {
+    if (/windows/i.test(navigator.userAgent)) {
+      window.location.href = "downloads/Cinla-1.0.0-x64.exe";
+      return;
+    }
     if (installPrompt) {
       installPrompt.prompt();
       await installPrompt.userChoice;

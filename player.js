@@ -85,7 +85,6 @@ const coverImg = document.getElementById("coverImg");
 const trackTitle = document.getElementById("trackTitle");
 const trackChannel = document.getElementById("trackChannel");
 const playerStatus = document.getElementById("playerStatus");
-const upNext = document.getElementById("upNext");
 const seekBar = document.getElementById("seekBar");
 const curTimeEl = document.getElementById("curTime");
 const durTimeEl = document.getElementById("durTime");
@@ -98,6 +97,12 @@ const queueToggleBtn = document.getElementById("queueToggleBtn");
 const queuePanel = document.getElementById("queuePanel");
 const queueList = document.getElementById("queueList");
 const queueCloseBtn = document.getElementById("queueCloseBtn");
+const queueCurrentSong = document.getElementById("queueCurrentSong");
+const recentHistoryList = document.getElementById("recentHistoryList");
+const queueTabBtn = document.getElementById("queueTabBtn");
+const recentTabBtn = document.getElementById("recentTabBtn");
+const queuePane = document.getElementById("queuePane");
+const recentPane = document.getElementById("recentPane");
 
 const shuffleBtn = document.getElementById("shuffleBtn");
 const backBtn = document.getElementById("backBtn");
@@ -114,7 +119,6 @@ let ytPlayer = null;
 let isPlaying = false;
 let isSeeking = false;
 let shuffleOn = false;
-let plannedNextId = null;
 let repeatOn = false;
 let progressInterval = null;
 let lastVolume = 100;
@@ -220,6 +224,7 @@ function initPlayer() {
     onStateChange: (e) => {
       if (e.data === YT.PlayerState.PLAYING) {
         isPlaying = true;
+        rememberCurrentTrack();
         if (lyricsRenderer) lyricsRenderer.setPaused(false);
         setPlayIcon(true);
         stage.classList.add("is-playing");
@@ -294,7 +299,6 @@ function goToTrack(song) {
     progressInterval = null;
   }
   current = { id: song.id, title: song.title, channel: song.channel || "" };
-  plannedNextId = null;
   cleanUrl(current.id);
 
   applyTrackMeta(current);
@@ -325,9 +329,8 @@ function getNextTrack() {
   if (!queue.length) return null;
   const idx = findQueueIndex();
   if (shuffleOn) {
-    const planned = queue.find(song => song.id === plannedNextId && song.id !== current.id);
     const choices = queue.filter(song => song.id !== current.id);
-    return planned || choices[Math.floor(Math.random() * choices.length)] || queue[0];
+    return choices[Math.floor(Math.random() * choices.length)] || queue[0];
   }
   return queue[idx === -1 ? 0 : (idx + 1) % queue.length];
 }
@@ -358,40 +361,77 @@ function handleTrackEnded() {
 }
 
 // ================= Çalma Sırası Paneli =================
-function renderQueuePanel() {
-  const nextSong = getNextTrack();
-  plannedNextId = shuffleOn ? nextSong?.id || null : plannedNextId;
-  if (upNext) upNext.innerHTML = nextSong && nextSong.id !== current.id
-    ? `<span class="up-next-label">SIRADAKİ</span><strong>${escapeHtml(nextSong.title)}</strong><small>${escapeHtml(nextSong.channel || "")}</small>`
-    : `<span class="up-next-label">SIRADAKİ</span><strong>Listenin son şarkısı</strong>`;
-  if (!queue.length) {
-    queueList.innerHTML = `<div class="queue-empty">Çalma sırası boş. Listeye dönüp bir şarkı seçtiğinde burada görünecek.</div>`;
+function queueTrackRow(song, active = false) {
+  const row = document.createElement("div");
+  row.className = "queue-item" + (active ? " active" : "");
+  row.innerHTML = `
+    <img src="https://i.ytimg.com/vi/${encodeURIComponent(song.id)}/default.jpg" alt="">
+    <div class="queue-item-info">
+      <p class="queue-item-title">${escapeHtml(song.title || "Bilinmeyen Şarkı")}</p>
+      <p class="queue-item-channel">${escapeHtml(song.channel || "")}</p>
+    </div>${active ? '<span class="queue-now-badge">Çalıyor</span>' : ""}`;
+  row.addEventListener("click", () => {
+    if (song.id !== current.id && isApprovedMusicVideo(song.id)) goToTrack(song);
+  });
+  return row;
+}
+
+function getRecentHistory() {
+  try { return JSON.parse(localStorage.getItem("cinla_recent_history") || "[]").filter(item => item && item.id && isApprovedMusicVideo(item.id)); }
+  catch { return []; }
+}
+
+function rememberCurrentTrack() {
+  if (!current.id || !isApprovedMusicVideo(current.id)) return;
+  const list = getRecentHistory().filter(item => item.id !== current.id);
+  list.unshift({ id: current.id, title: current.title, channel: current.channel || "", playedAt: Date.now() });
+  try { localStorage.setItem("cinla_recent_history", JSON.stringify(list.slice(0, 40))); } catch { /* yerel depolama kapalı */ }
+  renderRecentHistory();
+}
+
+function renderRecentHistory() {
+  if (!recentHistoryList) return;
+  const recent = getRecentHistory();
+  recentHistoryList.replaceChildren();
+  if (!recent.length) {
+    recentHistoryList.innerHTML = '<div class="queue-empty">Çaldığın şarkılar burada görünecek.</div>';
     return;
   }
-  queueList.innerHTML = "";
-  queue.forEach(song => {
-    const row = document.createElement("div");
-    row.className = "queue-item" + (song.id === current.id ? " active" : "");
-    row.innerHTML = `
-      <img src="https://i.ytimg.com/vi/${song.id}/default.jpg" alt="">
-      <div class="queue-item-info">
-        <p class="queue-item-title">${escapeHtml(song.title)}</p>
-        <p class="queue-item-channel">${escapeHtml(song.channel || "")}</p>
-      </div>
-      ${song.id === current.id ? '<span class="queue-now-badge">Çalıyor</span>' : song.id === nextSong?.id ? '<span class="queue-now-badge next-badge">Sıradaki</span>' : ""}
-    `;
-    row.addEventListener("click", () => {
-      if (song.id !== current.id) goToTrack(song);
-    });
-    queueList.appendChild(row);
-  });
+  recent.forEach(song => recentHistoryList.appendChild(queueTrackRow(song, false)));
+}
+
+function renderQueuePanel() {
+  if (queueCurrentSong) {
+    queueCurrentSong.replaceChildren();
+    if (current.id && isApprovedMusicVideo(current.id)) queueCurrentSong.appendChild(queueTrackRow(current, true));
+    else queueCurrentSong.innerHTML = '<div class="queue-empty">Henüz şarkı seçilmedi.</div>';
+  }
+  const nextSong = getNextTrack();
+  const upcoming = queue.filter(song => song.id !== current.id);
+  if (shuffleOn && nextSong) upcoming.sort((a, b) => a.id === nextSong.id ? -1 : b.id === nextSong.id ? 1 : 0);
+  queueList.replaceChildren();
+  if (!upcoming.length) queueList.innerHTML = '<div class="queue-empty">Sırada başka şarkı yok.</div>';
+  else upcoming.forEach(song => queueList.appendChild(queueTrackRow(song)));
+  renderRecentHistory();
+}
+
+function showQueueTab(tab) {
+  const recent = tab === "recent";
+  queuePane.hidden = recent;
+  recentPane.hidden = !recent;
+  queueTabBtn.classList.toggle("active", !recent);
+  recentTabBtn.classList.toggle("active", recent);
+  queueTabBtn.setAttribute("aria-selected", String(!recent));
+  recentTabBtn.setAttribute("aria-selected", String(recent));
 }
 
 function openQueuePanel() {
   queuePanel.classList.add("open");
+  queueToggleBtn.setAttribute("aria-expanded", "true");
 }
 function closeQueuePanel() {
   queuePanel.classList.remove("open");
+  queueToggleBtn.setAttribute("aria-expanded", "false");
 }
 
 // ================= Şarkı Sözleri =================
@@ -929,8 +969,7 @@ function init() {
 
   shuffleBtn.addEventListener("click", () => {
     shuffleOn = !shuffleOn;
-    plannedNextId = null;
-    shuffleBtn.classList.toggle("active", shuffleOn);
+      shuffleBtn.classList.toggle("active", shuffleOn);
     renderQueuePanel();
   });
 
@@ -970,6 +1009,8 @@ function init() {
     else openQueuePanel();
   });
   queueCloseBtn.addEventListener("click", closeQueuePanel);
+  queueTabBtn.addEventListener("click", () => showQueueTab("queue"));
+  recentTabBtn.addEventListener("click", () => showQueueTab("recent"));
 
   backLink.addEventListener("click", () => {
     if (ytPlayer && ytPlayer.getCurrentTime) {

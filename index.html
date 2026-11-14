@@ -72,12 +72,7 @@
       <button class="btn btn-quiet btn-wide" id="addSongBtn">Şarkı ekle</button>
       <button class="btn btn-quiet btn-wide" id="settingsBtn">Ayarlar</button>
 
-      <div class="connect-box">
-        <p class="connect-heading">HESAPLARIN</p>
-        <button id="googleConnectBtn" class="connect-button google-connect" type="button"><span class="provider-icon">G</span><span id="googleConnectLabel">Google ile bağlan</span></button>
-        <button id="spotifyConnectBtn" class="connect-button spotify-connect" type="button"><span class="provider-icon">●</span><span id="spotifyConnectLabel">Spotify’ı bağla</span></button>
-        <p id="connectionStatus" class="connection-status" role="status" aria-live="polite">Bağlantıların ve koleksiyonların bu cihazda saklanır.</p>
-      </div>
+
     </div>
   </aside>
 
@@ -89,7 +84,21 @@
         <p class="page-intro">Dinlemek istediklerini bul, kendi listeni oluştur. Aradığın şarkıyı eklemek de kolay.</p>
       </div>
       <div class="header-actions">
-        <button id="installAppBtn" class="btn btn-install" type="button">Uygulamayı yükle</button>
+        <div class="profile-wrap">
+          <button id="profileMenuBtn" class="profile-menu-btn" type="button" aria-expanded="false" aria-controls="accountMenu">
+            <span class="profile-avatar" aria-hidden="true">Ç</span><span>Hesaplar</span><span class="profile-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="account-menu" id="accountMenu" hidden>
+            <div class="account-menu-title">Hesaplarını bağla</div>
+            <div class="connect-box">
+        <p class="connect-heading">HESAPLARIN</p>
+        <button id="googleConnectBtn" class="connect-button google-connect" type="button"><span class="provider-icon">G</span><span id="googleConnectLabel">Google ile bağlan</span></button>
+        <button id="spotifyConnectBtn" class="connect-button spotify-connect" type="button"><span class="provider-icon">●</span><span id="spotifyConnectLabel">Spotify’ı bağla</span></button>
+        <p id="connectionStatus" class="connection-status" role="status" aria-live="polite">Bağlantıların ve koleksiyonların bu cihazda saklanır.</p>
+      </div>
+          </div>
+        </div>
+        <button id="installAppBtn" class="btn btn-install" type="button">Windows uygulamasını indir</button>
         <button id="refreshBtn" class="btn btn-quiet" title="Listeyi yenile">Yenile</button>
       </div>
     </header>
