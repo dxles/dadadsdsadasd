@@ -1164,3 +1164,14 @@ body { background:#080808; }
 .account-menu .connection-status { margin-top:2px; }
 @media(max-width:780px) { .header-actions { flex-direction:row; align-items:center; flex-wrap:wrap; } .account-menu { right:0; } }
 @media(max-width:520px) { .header-actions { gap:7px; } .profile-menu-btn { min-height:38px; } #installAppBtn { font-size:11px; } }
+
+/* ---- Gizlilik bağlantıları ve alt bilgi ---- */
+.privacy-link { display: inline-block; color: var(--muted); font-size: 12px; text-align: center; }
+.privacy-link:hover { color: var(--turq); }
+.privacy-note { margin-top: 2px; }
+.privacy-note a { color: var(--turq); }
+.site-footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.6; max-width: 760px; }
+.site-footer p + p { margin-top: 8px; }
+.site-footer strong { color: var(--text); }
+.site-footer a { color: var(--turq); }
+

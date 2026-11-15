@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261114c">
+<link rel="stylesheet" href="style.css?v=20261115a">
 <link rel="stylesheet" href="lyrics-styles.css?v=20261114c">
 </head>
 <body>
@@ -71,6 +71,7 @@
     <div class="sidebar-foot">
       <button class="btn btn-quiet btn-wide" id="addSongBtn">Şarkı ekle</button>
       <button class="btn btn-quiet btn-wide" id="settingsBtn">Ayarlar</button>
+      <a class="privacy-link" href="privacy.html">Gizlilik Politikası</a>
 
 
     </div>
@@ -95,6 +96,7 @@
         <button id="googleConnectBtn" class="connect-button google-connect" type="button"><span class="provider-icon">G</span><span id="googleConnectLabel">Google ile bağlan</span></button>
         <button id="spotifyConnectBtn" class="connect-button spotify-connect" type="button"><span class="provider-icon">●</span><span id="spotifyConnectLabel">Spotify’ı bağla</span></button>
         <p id="connectionStatus" class="connection-status" role="status" aria-live="polite">Bağlantıların ve koleksiyonların bu cihazda saklanır.</p>
+        <p class="connection-status privacy-note">Google ile bağlanınca YouTube hesabına yalnızca okuma izni verirsin. Verilerin sunucuya gönderilmez. <a href="privacy.html">Gizlilik Politikası</a></p>
       </div>
           </div>
         </div>
@@ -140,6 +142,11 @@
     </div>
 
     <div id="songGrid" class="song-grid"></div>
+
+    <footer class="site-footer">
+      <p><strong>Çınla</strong>, Türkçe müzik dinleme ve şarkı sözü takip uygulamasıdır. Türkçe rap, pop ve arabesk dinler, kendi çalma listelerini oluşturur, sözleri şarkıyla senkron takip edersin. İstersen Google (YouTube) ve Spotify hesabını bağlayıp listelerini içe aktarabilirsin; bu bağlantılar yalnızca okuma iznidir.</p>
+      <p>Çınla, YouTube API Hizmetleri’ni kullanır: <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer">YouTube Hizmet Şartları</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google Gizlilik Politikası</a> · <a href="privacy.html">Çınla Gizlilik Politikası</a></p>
+    </footer>
   </main>
 
 </div>
